@@ -38,17 +38,6 @@ function renderTemplate(tpl, data) {
   );
 }
 
-// Accent hue for the footer link icon + rule. Dark enough to read on paper.
-const ACCENT_FILLS = [
-  "#1a1a1a",
-  "#c2410c",
-  "#1d4ed8",
-  "#0f766e",
-  "#7e22ce",
-  "#b91c1c",
-  "#a16207",
-];
-
 // Light "paper" backgrounds — subtle tints that keep a clean, readable surface.
 // Only the background varies now (no colored content boxes).
 const PAPER_FILLS = [
@@ -91,7 +80,6 @@ export async function renderPost({ hook, content, category, account, account_lin
   const dot = link.indexOf(".");
   const accountLinkHead = dot > 0 ? link.slice(0, dot) : link;
   const accountLinkTail = dot > 0 ? link.slice(dot) : "";
-  const accent = ACCENT_FILLS[Math.floor(Math.random() * ACCENT_FILLS.length)];
 
   const data = {
     content: htmlContent,
@@ -100,7 +88,6 @@ export async function renderPost({ hook, content, category, account, account_lin
     account_link: link,
     account_link_head: accountLinkHead,
     account_link_tail: accountLinkTail,
-    accent,
     bg_fill: bg,
   };
   let html = renderTemplate(htmlTpl, data);
