@@ -1,8 +1,11 @@
 node_modules/
 output/
 .env
+logs/
+backups/
 builder/_render.html
 builder/_bgm.mp3
+builder/.hyperframes/
 db.sqlite
 db.sqlite-wal
 db.sqlite-shm

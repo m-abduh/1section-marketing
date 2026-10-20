@@ -590,6 +590,8 @@ const ACCOUNTS = [
   { name: "1section.business", tokenEnv: "ACCOUNT_1SECTION_BUSINESS", prompts: NICHES[1].prompts },
   { name: "1section.career", tokenEnv: "ACCOUNT_1SECTION_CAREER", prompts: NICHES[2].prompts },
   { name: "1section.technology", tokenEnv: "ACCOUNT_1SECTION_TECHNOLOGY", prompts: NICHES[3].prompts },
+  { name: "1section.psychology", tokenEnv: "ACCOUNT_1SECTION_PSYCHOLOGY", prompts: officialPrompts() },
+  { name: "1section.relationship", tokenEnv: "ACCOUNT_1SECTION_RELATIONSHIP", prompts: officialPrompts() },
 ];
 
 function upsertAccount(account, position) {
