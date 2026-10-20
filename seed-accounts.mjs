@@ -570,6 +570,133 @@ A hundred installed apps mean nothing unused.
     }[c];
     return nichePrompt(niche, c, spec.structure, spec.example);
   }),
+
+  makeNiche("1section.investing", "investing and markets — asset allocation, valuations, risk, index funds and ETFs, portfolio construction, drawdowns, costs, and evidence-based long-term investing (not personal budgeting or saving habits)", (c, niche) => {
+    const spec = {
+      "Story": {
+        structure: `A short investing story arc (a 2–3 step chain, a turning point, a payoff), ending with the key word in **bold**.`,
+        example: `**Pick an index → Add monthly → Sit through the drop**
+
+Then the statement flips:
+
+"A 30% drawdown becomes the **entry ticket**."`,
+      },
+      "Myth": {
+        structure: `Open with a ~~strikethrough~~ investing myth (paraphrased, never a repeat of the hook), the corrected truth in **bold**, then one punchline.`,
+        example: `~~Great investors time the market.~~
+
+Missing the ten best days can halve a decade of returns.
+
+Time **in** the market beats timing it.`,
+      },
+      "Contrarian": {
+        structure: `One contrarian investing one-liner, a 3-step chain joined by ↓, then a bold verdict.`,
+        example: `Owning more tickers is **not** diversification.
+
+Hold the whole market
+↓
+Weight it by evidence
+↓
+Rebalance on a schedule
+
+Diversification is **structural**, not a ticker count.`,
+      },
+      "Unpopular Truth": {
+        structure: `A blunt unpopular investing truth, then a blunt verdict with the key word in **bold**.`,
+        example: `Your biggest portfolio drag is usually the fee, not the market.
+
+One percent compounds against you for thirty years.
+
+**Cost is the only guaranteed return.**`,
+      },
+      "Reframe": {
+        structure: `A ~~strikethrough~~ of a wrong investing belief, the right frame in **bold**, a short "- " list, then a plain closer.`,
+        example: `~~Volatility is risk.~~
+
+**Permanent loss is risk.**
+
+Volatility is:
+- Quoted every day
+- Usually temporary
+- Often rewarded
+
+Capital you never get back is what **actually hurts**.`,
+      },
+      "Q&A": {
+        structure: `A stinging investing question, a **X ≠ Y** contrast, a short explanation, then a plain two-line verdict.`,
+        example: `Why do good funds still disappoint?
+
+**Return ≠ Return you keep**
+
+Fees, taxes and bad timing eat the gap.
+
+What counts is **net, after cost and behaviour**.`,
+      },
+      "Compare": {
+        structure: `Compare two investing approaches in a small | table | (2 cols × 3 rows), then a plain one-line verdict.`,
+        example: `| Stock picking | Index fund |
+|---|---|---|
+| Skill driven | Rules driven |
+| Wide outcomes | Market return |
+| Time intensive | Automatic |
+
+**After costs, the index wins for most people.**`,
+      },
+      "Problem → Solution": {
+        structure: `"The investing problem might not be X" + a **bold** alternative, a 3-line "**X → Y**" chain, then a plain verdict.`,
+        example: `It might be the **plan**.
+
+**No allocation → Set the split**
+**Lumpy buys → Automate monthly**
+**Panic selling → Write the rule first**
+
+Fix the **process**, not the forecast.`,
+      },
+      "Warning": {
+        structure: `A hard investing warning, a short "- " list of red flags, "None of these prove **X**", then a plain two-line verdict.`,
+        example: `"Two percent a month, guaranteed." Walk away.
+
+- Fixed payout promises
+- No audited custodian
+- Bonuses for recruiting
+
+None of these prove **a real return**.
+
+When the risk is hidden, **the risk is yours**.`,
+      },
+      "Tips": {
+        structure: `A rhetorical investing question, a reframe ("make the action **smaller**"), three short bold lines, then a plain punchline.`,
+        example: `Overwhelmed choosing funds?
+
+Make the action **smaller**.
+
+**1 broad index. 
+1 auto transfer. 
+1 yearly review.**
+
+Boring beats **brilliant** over decades.`,
+      },
+      "Formula": {
+        structure: `One correct investing formula as a SINGLE HORIZONTAL line joined by × and =, a one-line reframe, then a plain verdict.`,
+        example: `**Capital × Time × Return − Costs = Wealth**
+
+Chasing return adds risk. Cutting cost adds certainty.
+
+Automate the **inputs**, ignore the **noise**.`,
+      },
+      "Stat": {
+        structure: `A "**X = label**" contrast on two lines, a plain line, then a **bold** closer.`,
+        example: `**Fees = A silent short**
+
+**Time = The compounding long**
+
+One percent can quietly remove a fifth of a thirty-year return.
+
+**Own the market, keep the cost low.**`,
+      },
+    }[c];
+    return nichePrompt(niche, c, spec.structure, spec.example);
+  }),
 ];
 
 // Official/general account: reuse the global default category prompts so it
@@ -585,7 +712,7 @@ function officialPrompts() {
 // Buffer token. Order here sets their rotation position (explicit position).
 // ---------------------------------------------------------------------------
 const ACCOUNTS = [
-  { name: "1section.investing", link: "investing.1section.com", tokenEnv: "ACCOUNT_1SECTION_INVESTING", prompts: officialPrompts() },
+  { name: "1section.investing", link: "investing.1section.com", tokenEnv: "ACCOUNT_1SECTION_INVESTING", prompts: NICHES[4].prompts },
   { name: "1section.finance", link: "finance.1section.com", tokenEnv: "ACCOUNT_1SECTION_FINANCE", prompts: NICHES[0].prompts },
   { name: "1section.business", link: "business.1section.com", tokenEnv: "ACCOUNT_1SECTION_BUSINESS", prompts: NICHES[1].prompts },
   { name: "1section.career", link: "career.1section.com", tokenEnv: "ACCOUNT_1SECTION_CAREER", prompts: NICHES[2].prompts },
