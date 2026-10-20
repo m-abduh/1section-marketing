@@ -162,6 +162,7 @@ Don't just work more.
 ];
 
 const ACCOUNT = "1section.finance";
+const ACCOUNT_LINK = "finance.1section.com";
 
 async function main() {
   let i = 1;
@@ -170,7 +171,7 @@ async function main() {
     const out = join(OUT, `${s.name}-${ts}.mp4`);
     console.log(`\n[${i}/${SAMPLES.length}] Rendering "${s.name}" (${s.hook}) ...`);
     try {
-      await renderPost({ hook: s.hook, content: s.content, category: s.name, account: ACCOUNT }, out);
+      await renderPost({ hook: s.hook, content: s.content, category: s.name, account: ACCOUNT, account_link: ACCOUNT_LINK }, out);
       console.log(`  ✅ ${s.name} done in ${((Date.now() - ts) / 1000).toFixed(1)}s -> ${out}`);
     } catch (e) {
       console.error(`  ❌ ${s.name} FAILED: ${e.message}`);

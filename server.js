@@ -137,22 +137,23 @@ app.get("/api/accounts/:id", (req, res) => {
 });
 
 app.post("/api/accounts", (req, res) => {
-  const { name, buffer_token } = req.body || {};
+  const { name, buffer_token, link } = req.body || {};
   if (!name || !buffer_token) return res.status(400).json({ error: "name and buffer_token required" });
   try {
-    res.json(store.createAccount({ name: name.trim(), buffer_token: buffer_token.trim() }));
+    res.json(store.createAccount({ name: name.trim(), buffer_token: buffer_token.trim(), link: (link || "").trim() }));
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
 });
 
 app.put("/api/accounts/:id", (req, res) => {
-  const { name, buffer_token } = req.body || {};
+  const { name, buffer_token, link } = req.body || {};
   const existing = store.getAccount(Number(req.params.id));
   if (!existing) return res.status(404).json({ error: "not found" });
   const updated = store.updateAccount(existing.id, {
     name: name !== undefined ? name : existing.name,
     buffer_token: buffer_token !== undefined ? buffer_token : existing.buffer_token,
+    link: link !== undefined ? link.trim() : existing.link,
   });
   res.json(updated);
 });

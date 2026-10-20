@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS accounts (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   name        TEXT NOT NULL UNIQUE,
   buffer_token TEXT NOT NULL,
+  link        TEXT NOT NULL DEFAULT '',
   position    INTEGER NOT NULL DEFAULT 0,
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -57,6 +58,12 @@ CREATE TABLE IF NOT EXISTS videos (
   posted_at   TEXT
 );
 `);
+
+// Migration: `link` holds the public per-account URL shown in the video footer
+// (e.g. finance.1section.com). Added after the initial schema, so guard it.
+if (!db.prepare("PRAGMA table_info(accounts)").all().some((c) => c.name === "link")) {
+  db.exec("ALTER TABLE accounts ADD COLUMN link TEXT NOT NULL DEFAULT ''");
+}
 
 function getSetting(key, fallback = "") {
   const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key);
@@ -123,16 +130,20 @@ export const store = {
   getAccount(id) {
     return db.prepare("SELECT * FROM accounts WHERE id = ?").get(id);
   },
-  createAccount({ name, buffer_token }) {
+  createAccount({ name, buffer_token, link }) {
     const max = db.prepare("SELECT COALESCE(MAX(position)+1,0) AS p FROM accounts").get().p;
     const info = db.prepare(
-      "INSERT INTO accounts(name, buffer_token, position) VALUES(?,?,?)"
-    ).run(name, buffer_token, max);
+      "INSERT INTO accounts(name, buffer_token, link, position) VALUES(?,?,?,?)"
+    ).run(name, buffer_token, link || "", max);
     this.syncAllAccountCategories();
     return this.getAccount(info.lastInsertRowid);
   },
-  updateAccount(id, { name, buffer_token }) {
-    db.prepare("UPDATE accounts SET name=?, buffer_token=? WHERE id=?").run(name, buffer_token, id);
+  updateAccount(id, { name, buffer_token, link }) {
+    const existing = this.getAccount(id);
+    if (!existing) return undefined;
+    const nextLink = link !== undefined ? link : existing.link;
+    db.prepare("UPDATE accounts SET name=?, buffer_token=?, link=? WHERE id=?")
+      .run(name, buffer_token, nextLink, id);
     return this.getAccount(id);
   },
   deleteAccount(id) {

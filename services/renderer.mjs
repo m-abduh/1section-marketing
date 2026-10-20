@@ -66,7 +66,7 @@ export function buildMarkdown({ hook, body }) {
   return `## ${(hook || "").trim()}\n\n` + (body || "").trim();
 }
 
-export async function renderPost({ hook, content, category, account, content_text, index }, outputPath) {
+export async function renderPost({ hook, content, category, account, account_link, content_text, index }, outputPath) {
   const htmlTpl = readFileSync(join(BUILDER, "unified.html"), "utf-8");
   const bg = PAPER_FILLS[Math.floor(Math.random() * PAPER_FILLS.length)];
 
@@ -80,6 +80,7 @@ export async function renderPost({ hook, content, category, account, content_tex
     content: htmlContent,
     category: category || "",
     account: account || "",
+    account_link: account_link || "",
     bg_fill: bg,
   };
   let html = renderTemplate(htmlTpl, data);

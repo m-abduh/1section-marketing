@@ -585,23 +585,30 @@ function officialPrompts() {
 // Buffer token. Order here sets their rotation position (explicit position).
 // ---------------------------------------------------------------------------
 const ACCOUNTS = [
-  { name: "1section.official", tokenEnv: "ACCOUNT_1SECTION_OFFICIAL", prompts: officialPrompts() },
-  { name: "1section.finance", tokenEnv: "ACCOUNT_1SECTION_FINANCE", prompts: NICHES[0].prompts },
-  { name: "1section.business", tokenEnv: "ACCOUNT_1SECTION_BUSINESS", prompts: NICHES[1].prompts },
-  { name: "1section.career", tokenEnv: "ACCOUNT_1SECTION_CAREER", prompts: NICHES[2].prompts },
-  { name: "1section.technology", tokenEnv: "ACCOUNT_1SECTION_TECHNOLOGY", prompts: NICHES[3].prompts },
-  { name: "1section.psychology", tokenEnv: "ACCOUNT_1SECTION_PSYCHOLOGY", prompts: officialPrompts() },
-  { name: "1section.relationship", tokenEnv: "ACCOUNT_1SECTION_RELATIONSHIP", prompts: officialPrompts() },
+  { name: "1section.investing", link: "investing.1section.com", tokenEnv: "ACCOUNT_1SECTION_INVESTING", prompts: officialPrompts() },
+  { name: "1section.finance", link: "finance.1section.com", tokenEnv: "ACCOUNT_1SECTION_FINANCE", prompts: NICHES[0].prompts },
+  { name: "1section.business", link: "business.1section.com", tokenEnv: "ACCOUNT_1SECTION_BUSINESS", prompts: NICHES[1].prompts },
+  { name: "1section.career", link: "career.1section.com", tokenEnv: "ACCOUNT_1SECTION_CAREER", prompts: NICHES[2].prompts },
+  { name: "1section.technology", link: "technology.1section.com", tokenEnv: "ACCOUNT_1SECTION_TECHNOLOGY", prompts: NICHES[3].prompts },
+  { name: "1section.psychology", link: "psychology.1section.com", tokenEnv: "ACCOUNT_1SECTION_PSYCHOLOGY", prompts: officialPrompts() },
+  { name: "1section.relationship", link: "relationship.1section.com", tokenEnv: "ACCOUNT_1SECTION_RELATIONSHIP", prompts: officialPrompts() },
 ];
 
 function upsertAccount(account, position) {
   let existing = store.listAccounts().find((a) => a.name === account.name);
   if (!existing) {
-    existing = store.createAccount({ name: account.name, buffer_token: process.env[account.tokenEnv] || "" });
-  } else if (process.env[account.tokenEnv] && process.env[account.tokenEnv] !== existing.buffer_token) {
-    store.updateAccount(existing.id, { name: account.name, buffer_token: process.env[account.tokenEnv] });
+    existing = store.createAccount({
+      name: account.name,
+      buffer_token: process.env[account.tokenEnv] || "",
+      link: account.link || "",
+    });
+  } else {
+    store.updateAccount(existing.id, {
+      name: account.name,
+      buffer_token: process.env[account.tokenEnv] || existing.buffer_token,
+      link: account.link || existing.link,
+    });
   }
-  store.updateAccount(existing.id, { name: account.name, buffer_token: process.env[account.tokenEnv] || existing.buffer_token });
 
   // Build category pairs: category_id + prompt, positioned in global category order.
   const pairs = account.prompts

@@ -43,8 +43,8 @@ html,body{font-family:'Satoshi',system-ui,sans-serif;background:var(--paper);col
 .md pre{--code-text:#f0efe9;background:#1b1b1f;color:var(--code-text);border:1px solid #2a2a30;border-radius:18px;padding:22px 26px;margin:0 0 20px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.14);font-family:'ui-monospace','SFMono-Regular','Menlo','Consolas',monospace;font-size:36px;font-weight:500;line-height:1.5;white-space:pre-wrap;overflow-wrap:break-word;text-align:left}
 .md pre code{font-family:inherit;font-size:36px;font-weight:500;background:none;color:inherit;padding:0}
 .md code{font-family:'ui-monospace','SFMono-Regular','Menlo','Consolas',monospace;font-size:34px;background:var(--code-bg);padding:2px 8px;border-radius:6px}
-.footer{display:flex;align-items:baseline;justify-content:center;gap:4px;margin-top:auto;padding-top:16px;flex-shrink:0;font-size:32px;font-weight:700;letter-spacing:1px}
-.footer .at{font-weight:500;color:var(--muted)}
+.footer{display:flex;align-items:baseline;justify-content:center;gap:4px;margin-top:auto;padding-top:16px;flex-shrink:0;font-size:32px;font-weight:500;letter-spacing:1px;color:var(--muted)}
+.footer .domain{font-weight:500;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -59,14 +59,14 @@ html,body{font-family:'Satoshi',system-ui,sans-serif;background:var(--paper);col
 <section class="clip" id="unified-scene" data-start="0" data-duration="15" data-track-index="1">
   <div class="topbar">
     <span class="category-badge">{{category}}</span>
-    <div class="account"><span class="handle">1section</span><span class="domain">.com</span></div>
+    <div class="account"><span class="at">@</span><span class="handle">{{account}}</span></div>
   </div>
   <div class="body">
     <div class="mdwrap">
       <div class="md">{{content}}</div>
     </div>
   </div>
-  <div class="footer"><span class="at">@</span><span class="handle">{{account}}</span></div>
+  <div class="footer"><span class="domain">{{account_link}}</span></div>
 </section>
 </div>
 <script>
