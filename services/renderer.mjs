@@ -38,6 +38,17 @@ function renderTemplate(tpl, data) {
   );
 }
 
+// Accent hue for the footer link icon + rule. Dark enough to read on paper.
+const ACCENT_FILLS = [
+  "#1a1a1a",
+  "#c2410c",
+  "#1d4ed8",
+  "#0f766e",
+  "#7e22ce",
+  "#b91c1c",
+  "#a16207",
+];
+
 // Light "paper" backgrounds — subtle tints that keep a clean, readable surface.
 // Only the background varies now (no colored content boxes).
 const PAPER_FILLS = [
@@ -76,11 +87,20 @@ export async function renderPost({ hook, content, category, account, account_lin
   let md = buildMarkdown({ hook, body: bodyText });
   md = md.replace(/^(\*\*[^*\n]+)$/gm, (line) => (line.endsWith("**") ? line : line + "**"));
   const htmlContent = marked.parse(md).replace(/<input\b[^>]*>/gi, "");
+  const link = String(account_link || "");
+  const dot = link.indexOf(".");
+  const accountLinkHead = dot > 0 ? link.slice(0, dot) : link;
+  const accountLinkTail = dot > 0 ? link.slice(dot) : "";
+  const accent = ACCENT_FILLS[Math.floor(Math.random() * ACCENT_FILLS.length)];
+
   const data = {
     content: htmlContent,
     category: category || "",
     account: account || "",
-    account_link: account_link || "",
+    account_link: link,
+    account_link_head: accountLinkHead,
+    account_link_tail: accountLinkTail,
+    accent,
     bg_fill: bg,
   };
   let html = renderTemplate(htmlTpl, data);
