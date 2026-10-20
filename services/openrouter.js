@@ -1,6 +1,6 @@
 import { store } from "../db.mjs";
 
-const MODEL = process.env.OPENROUTER_MODEL || "nvidia/nemotron-3-super-120b-a12b:free";
+const MODEL = process.env.OPENROUTER_MODEL || "nvidia/nemotron-3-ultra-550b-a55b:free";
 
 const DEFAULT_BASE_PROMPT = `You are a senior copywriter writing short, punchy, scroll-stopping content for a short-form video channel. The channel's NICHE is defined by the VIDEO CHANNEL NAME and the SOURCE INSTRUCTIONS below — you must stay strictly inside that niche (e.g. finance, business, career, or technology) and never drift to a different topic. Every claim must be factually correct for that niche — real, current, accurate, and up to date, no hype, no get-rich-quick nonsense.
 
