@@ -697,15 +697,264 @@ One percent can quietly remove a fifth of a thirty-year return.
     }[c];
     return nichePrompt(niche, c, spec.structure, spec.example);
   }),
+
+  makeNiche("1section.psychology", "psychology — human behaviour, emotions, cognitive biases, habits, motivation, self-awareness, and evidence-based mental health literacy for everyday life (never clinical or diagnostic advice)", (c, niche) => {
+    const spec = {
+      "Story": {
+        structure: `A short psychology story arc (a 2–3 step chain, a turning point, a payoff), ending with the key word in **bold**.`,
+        example: `**Notice the thought → Name the pattern → Choose the response**
+
+Then one session shifts:
+
+"The pause becomes the **skill**."`,
+      },
+      "Myth": {
+        structure: `Open with a ~~strikethrough~~ psychology myth (paraphrased, never a repeat of the hook), the corrected truth in **bold**, then one punchline.`,
+        example: `~~You can just tell yourself to stop overthinking.~~
+
+Telling the loop to stop usually feeds it.
+
+**Naming** it loosens the grip.`,
+      },
+      "Contrarian": {
+        structure: `One contrarian psychology one-liner, a 3-step chain joined by ↓, then a bold verdict.`,
+        example: `Motivation is **not** the starting point.
+
+Lower the friction
+↓
+Repeat the small action
+↓
+Let momentum build
+
+Action creates **motivation**, not the reverse.`,
+      },
+      "Unpopular Truth": {
+        structure: `A blunt unpopular psychology truth, then a blunt verdict with the key word in **bold**.`,
+        example: `Most people don't lack discipline; they lack recovery.
+
+One bad night doesn't break you. Never recovering does.
+
+**Rest is part of the method.**`,
+      },
+      "Reframe": {
+        structure: `A ~~strikethrough~~ of a wrong belief about feelings, the right frame in **bold**, a short "- " list, then a plain closer.`,
+        example: `~~Emotions are the problem.~~
+
+**Emotions are information.**
+
+They show:
+- What matters to you
+- What feels unsafe
+- What needs attention
+
+The signal is useful; the **story** around it may not be.`,
+      },
+      "Q&A": {
+        structure: `A stinging psychology question, a **X ≠ Y** contrast, a short explanation, then a plain two-line verdict.`,
+        example: `Why does advice work for others but not for you?
+
+**Information ≠ Implementation**
+
+Knowing a technique changes nothing without repetition.
+
+Skills come from **practice**, not insight alone.`,
+      },
+      "Compare": {
+        structure: `Compare two ways of handling the same inner experience in a small | table | (2 cols × 3 rows), then a plain one-line verdict.`,
+        example: `| Suppression | Regulation |
+|---|---|---|
+| Push it down | Name it |
+| Quick relief | Lasting calm |
+| Costs more later | Costs less now |
+
+**Feeling it skillfully beats burying it.**`,
+      },
+      "Problem → Solution": {
+        structure: `"The psychology problem might not be X" + a **bold** alternative, a 3-line "**X → Y**" chain, then a plain verdict.`,
+        example: `It might be the **environment**.
+
+**No cue → Add a trigger**
+**Too big → Shrink the step**
+**No feedback → Track it**
+
+Design the **context**; stop negotiating with yourself.`,
+      },
+      "Warning": {
+        structure: `A hard warning about a mental-health claim (hype, quick fixes, unqualified advice), a short "- " list of red flags, "None of these prove **X**", then a plain two-line verdict.`,
+        example: `"One trick cures anxiety forever." Be careful.
+
+- Instant-fix promises
+- No credentials named
+- One answer for everyone
+
+None of these prove **real support**.
+
+Good help is **structured, specific and accountable**.`,
+      },
+      "Tips": {
+        structure: `A rhetorical psychology question, a reframe ("make the change **smaller**"), three short bold lines, then a plain punchline.`,
+        example: `Stuck in the same loop?
+
+Make the change **smaller**.
+
+**1 breath. 
+1 label. 
+1 choice.**
+
+Small repetitions rewire more than **big insights**.`,
+      },
+      "Formula": {
+        structure: `One correct behavioural formula as a SINGLE HORIZONTAL line joined by × and =, a one-line reframe, then a plain verdict.`,
+        example: `**Cue × Repetition × Reward = Habit**
+
+Don't wait to feel ready.
+
+Engineer the **cue**, then reward the **effort**.`,
+      },
+      "Stat": {
+        structure: `A "**X = label**" contrast on two lines, a plain line, then a **bold** closer.`,
+        example: `**Thoughts = Interpretations**
+
+**Evidence = Reality**
+
+A convincing thought is still just a thought.
+
+**Test it before you trust it.**`,
+      },
+    }[c];
+    return nichePrompt(niche, c, spec.structure, spec.example);
+  }),
+
+  makeNiche("1section.relationship", "relationships — dating, long-term partnership, communication, boundaries, conflict repair, trust, attachment and emotional intimacy in everyday life (never clinical or diagnostic advice)", (c, niche) => {
+    const spec = {
+      "Story": {
+        structure: `A short relationship story arc (a 2–3 step chain, a turning point, a payoff), ending with the key word in **bold**.`,
+        example: `**Say the need → Hear the no → Stay connected**
+
+Then one conversation changes:
+
+"Honesty becomes the **glue**."`,
+      },
+      "Myth": {
+        structure: `Open with a ~~strikethrough~~ relationship myth (paraphrased, never a repeat of the hook), the corrected truth in **bold**, then one punchline.`,
+        example: `~~Good couples never fight.~~
+
+Stable couples repair faster after friction.
+
+**Repair** matters more than avoiding conflict.`,
+      },
+      "Contrarian": {
+        structure: `One contrarian relationship one-liner, a 3-step chain joined by ↓, then a bold verdict.`,
+        example: `More talking is **not** more communication.
+
+Pause the defence
+↓
+Name your own part
+↓
+Ask one real question
+
+Clarity beats **volume**.`,
+      },
+      "Unpopular Truth": {
+        structure: `A blunt unpopular relationship truth, then a blunt verdict with the key word in **bold**.`,
+        example: `Being right can cost you the connection.
+
+Winning the argument is a very small prize.
+
+**Understanding** is the actual goal.`,
+      },
+      "Reframe": {
+        structure: `A ~~strikethrough~~ of a wrong belief about boundaries, the right frame in **bold**, a short "- " list, then a plain closer.`,
+        example: `~~Boundaries push people away.~~
+
+**Boundaries keep the relationship honest.**
+
+They protect:
+- Your time
+- Your limits
+- Your respect for them
+
+Saying no early prevents **resentment** later.`,
+      },
+      "Q&A": {
+        structure: `A stinging relationship question, a **X ≠ Y** contrast, a short explanation, then a plain two-line verdict.`,
+        example: `Why does the same fight keep repeating?
+
+**The topic ≠ The need**
+
+You argue about dishes; the need is fairness.
+
+Address the **need**, not the surface.`,
+      },
+      "Compare": {
+        structure: `Compare two ways of handling conflict in a small | table | (2 cols × 3 rows), then a plain one-line verdict.`,
+        example: `| Avoiding | Repairing |
+|---|---|---|
+| Stay quiet | Name it |
+| Short-term peace | Long-term trust |
+| Grows resentment | Grows safety |
+
+**Repair fast and there is less to resent.**`,
+      },
+      "Problem → Solution": {
+        structure: `"The relationship problem might not be X" + a **bold** alternative, a 3-line "**X → Y**" chain, then a plain verdict.`,
+        example: `It might be the **timing**.
+
+**Heat → Pause it**
+**Calm → Return to it**
+**Pattern → Name it**
+
+Fix the **sequence**, not the person.`,
+      },
+      "Warning": {
+        structure: `A hard relationship warning, a short "- " list of red flags, "None of these prove **X**", then a plain two-line verdict.`,
+        example: `"Love means never needing anything." That isn't love.
+
+- You shrink to keep the peace
+- You apologise for basics
+- You can't name a single need
+
+None of these prove **closeness**.
+
+Real intimacy makes **space**, not silence.`,
+      },
+      "Tips": {
+        structure: `A rhetorical relationship question, a reframe ("make the ask **smaller**"), three short bold lines, then a plain punchline.`,
+        example: `Struggling to bring something up?
+
+Make the ask **smaller**.
+
+**1 sentence. 
+1 moment. 
+1 question.**
+
+Consistency builds **safety**, not speeches.`,
+      },
+      "Formula": {
+        structure: `One correct relationship formula as a SINGLE HORIZONTAL line joined by × and =, a one-line reframe, then a plain verdict.`,
+        example: `**Trust × Time × Repair = Closeness**
+
+Don't chase intensity.
+
+Show up **reliably** instead.`,
+      },
+      "Stat": {
+        structure: `A "**X = label**" contrast on two lines, a plain line, then a **bold** closer.`,
+        example: `**Attention = Affection**
+
+**Assumption = Distance**
+
+What you notice tends to grow.
+
+**Choose curiosity over certainty.**`,
+      },
+    }[c];
+    return nichePrompt(niche, c, spec.structure, spec.example);
+  }),
 ];
 
-// Official/general account: reuse the global default category prompts so it
-// stays generic (covers all niches).
-import { CATEGORY_SEEDS } from "./seed.mjs";
-
-function officialPrompts() {
-  return CATEGORY_SEEDS.map((s) => ({ category: s.name, prompt: s.default_prompt }));
-}
+// Every account now maps the 12 global categories to its own niche prompts —
+// there is no "generic" account anymore, so CATEGORY_SEEDS is not reused here.
 
 // ---------------------------------------------------------------------------
 // Account definitions. Name (Buffer account name) -> env var that holds its
@@ -717,8 +966,8 @@ const ACCOUNTS = [
   { name: "1section.business", link: "business.1section.com", tokenEnv: "ACCOUNT_1SECTION_BUSINESS", prompts: NICHES[1].prompts },
   { name: "1section.career", link: "career.1section.com", tokenEnv: "ACCOUNT_1SECTION_CAREER", prompts: NICHES[2].prompts },
   { name: "1section.technology", link: "technology.1section.com", tokenEnv: "ACCOUNT_1SECTION_TECHNOLOGY", prompts: NICHES[3].prompts },
-  { name: "1section.psychology", link: "psychology.1section.com", tokenEnv: "ACCOUNT_1SECTION_PSYCHOLOGY", prompts: officialPrompts() },
-  { name: "1section.relationship", link: "relationship.1section.com", tokenEnv: "ACCOUNT_1SECTION_RELATIONSHIP", prompts: officialPrompts() },
+  { name: "1section.psychology", link: "psychology.1section.com", tokenEnv: "ACCOUNT_1SECTION_PSYCHOLOGY", prompts: NICHES[5].prompts },
+  { name: "1section.relationship", link: "relationship.1section.com", tokenEnv: "ACCOUNT_1SECTION_RELATIONSHIP", prompts: NICHES[6].prompts },
 ];
 
 function upsertAccount(account, position) {
