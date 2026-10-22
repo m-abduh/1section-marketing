@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Multi-account social-media video generator ("1section"). Scheduler rotates through Buffer accounts and content categories, generating AI-written short-form videos (1080x1350, 25s = 20s content + 5s dark CTA end card) and posting them to Buffer. Express + EJS dashboard at `/`. State persisted in **SQLite** (`db.sqlite`).
+Multi-account social-media video generator ("1section"). Scheduler rotates through Buffer accounts and content categories, generating AI-written short-form videos (1080x1350, 20s = 15s content + 5s dark CTA end card) and posting them to Buffer. Express + EJS dashboard at `/`. State persisted in **SQLite** (`db.sqlite`).
 
 ## Commands
 - `npm run dev` — nodemon, local dev (`server.js` with scheduler)
@@ -8,8 +8,8 @@ Multi-account social-media video generator ("1section"). Scheduler rotates throu
 - `node render-all.mjs` — render **one sample unified video with dummy data** (no AI / Buffer, no DB). The fast way to validate the template offline.
 
 ## Requirements / gotchas
-- Rendering shells out to a **globally-installed `hyperframes` CLI**: `npx hyperframes render builder -c _render.html ...` (services/renderer.mjs). **Not** an npm dep. Requires `ffmpeg`. Render has a hard 300s timeout. A 25s video (750 frames) takes ~60-150s to render depending on load.
-- `builder/_render.html`, `builder/_bgm.mp3`, `output/`, and `db.sqlite*` are **gitignored** artifacts. `_render.html` is the fully-composed template written per render; `_bgm.mp3` is a 25s fade-out clip cut from a random `music/*.mp3`.
+- Rendering shells out to a **globally-installed `hyperframes` CLI**: `npx hyperframes render builder -c _render.html ...` (services/renderer.mjs). **Not** an npm dep. Requires `ffmpeg`. Render has a hard 300s timeout. A 20s video (600 frames) takes ~50-120s to render depending on load.
+- `builder/_render.html`, `builder/_bgm.mp3`, `output/`, and `db.sqlite*` are **gitignored** artifacts. `_render.html` is the fully-composed template written per render; `_bgm.mp3` is a 20s fade-out clip cut from a random `music/*.mp3`.
 - **`better-sqlite3` is a native addon** — on a fresh install run `npm install` then `npm rebuild better-sqlite3` if the binding is missing (package.json has `allowScripts` set, but install scripts can be blocked by npm's allow-list).
 - `db.sqlite` uses WAL journaling; `db.mjs` initializes schema on import. DB path overridable via `DB_PATH` env.
 - Buffer publishing requires `PUBLIC_URL` (set in `.env`) — each account's own `buffer_token` is stored in the DB, not `.env`.
@@ -34,7 +34,7 @@ Each scheduled run posts **one** (account, category) pair, advancing like a flat
 ## Builder / render pipeline
 - **`builder/unified.html` is the ONLY template** (all 12 old per-type templates were removed: stat, steps, compare, mythfact, quote, QnA, story, tips, formula, tierlist, checklist, warning). Do NOT recreate per-type templates.
 - Uses the custom mustache-like engine (`renderTemplate` in services/renderer.mjs): `{{hook}}`, `{{content}}`, `{{category}}`, `{{account}}`, `{{account_link}}`, `{{account_link_head}}`, `{{account_link_tail}}`, `{{conclusion}}`, `{{niche}}` and a random light `{{bg_fill}}` (paper tint). `content` is `\n`-joined; rendered with `white-space:pre-wrap`.
-- Composition root: `<div id="root" data-composition-id="unified" data-start="0" data-width="1080" data-height="1350" data-duration="25">` with TWO timed clips: the content slide `data-start="0" data-duration="20"` and the CTA end card `data-start="20" data-duration="5"`. Hyperframes keys clip visibility off `data-start`, so the switch is a hard cut at 20s. Content layout: topbar [category badge] (spacer) [@account handle] → [hook] → [content box] → centered footer: link icon + split-typography account `link` (`finance` bold, `.1section.com` muted). Textured paper bg via inline SVG `feTurbulence`.
+- Composition root: `<div id="root" data-composition-id="unified" data-start="0" data-width="1080" data-height="1350" data-duration="20">` with TWO timed clips: the content slide `data-start="0" data-duration="15"` and the CTA end card `data-start="15" data-duration="5"`. Hyperframes keys clip visibility off `data-start`, so the switch is a hard cut at 15s. Content layout: topbar [category badge] (spacer) [@account handle] → [hook] → [content box] → centered footer: link icon + split-typography account `link` (`finance` bold, `.1section.com` muted). Textured paper bg via inline SVG `feTurbulence`.
 - CTA end card: full-bleed near-black background with a faint grid. Everything is horizontally centered and the whole stack is vertically centered. Monochrome (white/gray text, no accent colors). Structure top→bottom: `1section` wordmark with the niche (`finance`) underneath → "THE BOTTOM LINE" eyebrow with side rules + AI `conclusion` → "FOLLOW FOR MORE" + `@account` → "Want a deeper breakdown?" + link pill (the domain is one unbroken string).
 - `renderPost({hook, content, category, account, account_link, conclusion}, outputPath)` in renderer writes the filled `_render.html` then spawns hyperframes. `videogen.generateVideo` caps concurrency via `RENDER_CONCURRENCY` (default 1); output file is `<account>-<epoch>.mp4`.
 

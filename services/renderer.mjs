@@ -374,15 +374,15 @@ export async function renderPost({ hook, content, category, account, account_lin
     await new Promise((resolve, reject) => {
       const ff = spawn("ffmpeg", [
         "-y", "-i", musicFile,
-        "-t", "25",
-        "-af", "afade=t=out:st=21:d=4",
+        "-t", "20",
+        "-af", "afade=t=out:st=16:d=4",
         "-c:a", "libmp3lame", "-q:a", "2",
         bgmPath
       ]);
       ff.on("close", c => c === 0 ? resolve() : reject(new Error(`ffmpeg exited ${c}`)));
       ff.on("error", reject);
     });
-    const audio = `<audio id="bgm" src="./_bgm.mp3" data-start="0" data-duration="25" data-volume="0.3" data-has-audio="true"></audio>`;
+    const audio = `<audio id="bgm" src="./_bgm.mp3" data-start="0" data-duration="20" data-volume="0.3" data-has-audio="true"></audio>`;
     html = html.replace("</div>", audio + "\n</div>");
   }
 
