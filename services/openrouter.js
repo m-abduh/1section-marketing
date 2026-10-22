@@ -78,6 +78,13 @@ function extractJSON(text) {
   return JSON.parse(cleaned.slice(start, end + 1));
 }
 
+// The base prompt is stored in the DB and may be an older revision. Append the
+// final output contract on every request so "conclusion" is always generated,
+// regardless of which prompt revision is saved.
+const OUTPUT_CONTRACT = `FINAL OUTPUT CONTRACT (overrides any earlier output-format instruction):
+Return ONLY raw JSON (no markdown fences) with exactly these keys: "hook", "content", "caption", "conclusion".
+"conclusion" = ONE short, plain-text sentence (max 18 words) that states the takeaway of this exact post. No markdown, no hashtags, no @mentions, no emojis, and do not repeat the hook word-for-word. It is printed on the dark end card under "THE TAKEAWAY".`;
+
 /**
  * Generate post content (copywriting + caption) for an account+category.
  * @param {object} opts
@@ -99,7 +106,9 @@ Category: ${categoryName}
 SOURCE INSTRUCTIONS (these define the content style, structure, and format — follow them first):
 ${src}
 
-${base}`;
+${base}
+
+${OUTPUT_CONTRACT}`;
 
   const text = await askAI(userPrompt);
   const parsed = extractJSON(text);
@@ -108,10 +117,15 @@ ${base}`;
     ? parsed.content.join("\n")
     : String(parsed.content || "");
 
+  const conclusion = String(
+    parsed.conclusion || parsed.takeaway || parsed.summary || ""
+  ).trim();
+
   return {
     hook: String(parsed.hook || parsed.title || ""),
     content,
     caption: String(parsed.caption || parsed.follow_call || "").trim() + " #1section",
+    conclusion,
     content_json: JSON.stringify(parsed),
   };
 }

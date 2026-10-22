@@ -8,6 +8,7 @@ Voice: SHORT, DENSE, EMOTIONAL, PERSONAL. Speak directly to the viewer as "you" 
 
 "hook" MUST be 7 to 14 words: a strong, emotional, specific, current scroll-stopping statement or question rooted in the niche. It becomes the H2 title on the slide.
 "caption" MUST be one short personal paragraph (no hashtags, no @ mentions).
+"conclusion" MUST be ONE short sentence (max 18 words): the takeaway of the post, plain text, no markdown/hashtags/emojis. It is printed on the dark end card.
 
 "content" is the Markdown BODY printed below the hook title on ONE static 1080x1350 slide. It must NOT look like the previous post: choose the shape that fits the idea and rotate between shapes instead of defaulting to "subhead + bullet list".
 
@@ -28,5 +29,6 @@ Return ONLY valid JSON matching EXACTLY this shape:
 {
   "hook": "a 7-14 word strong hook line",
   "content": "the Markdown body following the source instructions (no H1, no title)",
-  "caption": "one short paragraph for the social post caption (no hashtags, no @ mentions)"
+  "caption": "one short paragraph for the social post caption (no hashtags, no @ mentions)",
+  "conclusion": "one short takeaway sentence (max 18 words, plain text)"
 }`;

@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Multi-account social-media video generator ("1section"). Scheduler rotates through Buffer accounts and content categories, generating AI-written short-form videos (1080x1350, 15s, static animated-free layout) and posting them to Buffer. Express + EJS dashboard at `/`. State persisted in **SQLite** (`db.sqlite`).
+Multi-account social-media video generator ("1section"). Scheduler rotates through Buffer accounts and content categories, generating AI-written short-form videos (1080x1350, 25s = 20s content + 5s dark CTA end card) and posting them to Buffer. Express + EJS dashboard at `/`. State persisted in **SQLite** (`db.sqlite`).
 
 ## Commands
 - `npm run dev` — nodemon, local dev (`server.js` with scheduler)
@@ -8,8 +8,8 @@ Multi-account social-media video generator ("1section"). Scheduler rotates throu
 - `node render-all.mjs` — render **one sample unified video with dummy data** (no AI / Buffer, no DB). The fast way to validate the template offline.
 
 ## Requirements / gotchas
-- Rendering shells out to a **globally-installed `hyperframes` CLI**: `npx hyperframes render builder -c _render.html ...` (services/renderer.mjs). **Not** an npm dep. Requires `ffmpeg`. Render has a hard 180s timeout. A single ~40s of footage takes ~40s+ to render.
-- `builder/_render.html`, `builder/_bgm.mp3`, `output/`, and `db.sqlite*` are **gitignored** artifacts. `_render.html` is the fully-composed template written per render; `_bgm.mp3` is a 15s fade-out clip cut from a random `music/*.mp3`.
+- Rendering shells out to a **globally-installed `hyperframes` CLI**: `npx hyperframes render builder -c _render.html ...` (services/renderer.mjs). **Not** an npm dep. Requires `ffmpeg`. Render has a hard 300s timeout. A 25s video (750 frames) takes ~60-150s to render depending on load.
+- `builder/_render.html`, `builder/_bgm.mp3`, `output/`, and `db.sqlite*` are **gitignored** artifacts. `_render.html` is the fully-composed template written per render; `_bgm.mp3` is a 25s fade-out clip cut from a random `music/*.mp3`.
 - **`better-sqlite3` is a native addon** — on a fresh install run `npm install` then `npm rebuild better-sqlite3` if the binding is missing (package.json has `allowScripts` set, but install scripts can be blocked by npm's allow-list).
 - `db.sqlite` uses WAL journaling; `db.mjs` initializes schema on import. DB path overridable via `DB_PATH` env.
 - Buffer publishing requires `PUBLIC_URL` (set in `.env`) — each account's own `buffer_token` is stored in the DB, not `.env`.
@@ -33,12 +33,13 @@ Each scheduled run posts **one** (account, category) pair, advancing like a flat
 
 ## Builder / render pipeline
 - **`builder/unified.html` is the ONLY template** (all 12 old per-type templates were removed: stat, steps, compare, mythfact, quote, QnA, story, tips, formula, tierlist, checklist, warning). Do NOT recreate per-type templates.
-- Uses the custom mustache-like engine (`renderTemplate` in services/renderer.mjs): `{{hook}}`, `{{content}}`, `{{category}}`, `{{account}}`, `{{account_link}}` and a random bright `{{box_fill}}`/`{{text_color}}` palette (dark-blue/orange/green/yellow/purple/cyan/pink/lime). `content` is `\n`-joined; rendered with `white-space:pre-wrap`.
-- Composition root: `<div id="root" data-composition-id="unified" data-start="0" data-width="1080" data-height="1350" data-duration="15">` with ONE `<section class="clip" data-start="0" data-duration="15">`. Static (empty GSAP timeline). Layout: topbar [category badge] (spacer) [@account handle] → [hook] → [content box] → centered footer: link icon + split-typography account `link` (`finance` bold, `.1section.com` muted) + short accent rule. Textured paper bg via inline SVG `feTurbulence`.
-- `renderPost({hook, content, category, account, account_link}, outputPath)` in renderer writes the filled `_render.html` then spawns hyperframes. `videogen.generateVideo` caps concurrency via `RENDER_CONCURRENCY` (default 1); output file is `<account>-<epoch>.mp4`.
+- Uses the custom mustache-like engine (`renderTemplate` in services/renderer.mjs): `{{hook}}`, `{{content}}`, `{{category}}`, `{{account}}`, `{{account_link}}`, `{{account_link_head}}`, `{{account_link_tail}}`, `{{conclusion}}`, `{{cta_accent}}` and a random light `{{bg_fill}}` (paper tint). `content` is `\n`-joined; rendered with `white-space:pre-wrap`.
+- Composition root: `<div id="root" data-composition-id="unified" data-start="0" data-width="1080" data-height="1350" data-duration="25">` with TWO timed clips: the content slide `data-start="0" data-duration="20"` and the CTA end card `data-start="20" data-duration="5"`. Hyperframes keys clip visibility off `data-start`, so the switch is a hard cut at 20s. Content layout: topbar [category badge] (spacer) [@account handle] → [hook] → [content box] → centered footer: link icon + split-typography account `link` (`finance` bold, `.1section.com` muted). Textured paper bg via inline SVG `feTurbulence`.
+- CTA end card: full-bleed near-black background with a faint grid + one random accent color (`--cta-accent`, from `CTA_ACCENTS` in renderer). Structure top→bottom: `1section` logo (mark + wordmark + MARKETING) → "THE TAKEAWAY" eyebrow + AI `conclusion` → "FOLLOW FOR MORE" + `@account` → link pill (`finance` bold + `.1section.com` muted + accent arrow). White text, accent only on small marks/labels/borders — never a large fill.
+- `renderPost({hook, content, category, account, account_link, conclusion}, outputPath)` in renderer writes the filled `_render.html` then spawns hyperframes. `videogen.generateVideo` caps concurrency via `RENDER_CONCURRENCY` (default 1); output file is `<account>-<epoch>.mp4`.
 
 ## OpenRouter content contract
-`services/openrouter.js` `generatePost({accountName, categoryName, prompt})` → AI returns strict JSON `{hook, content, caption}`. `content` is multi-line Markdown: short (under ~45 words) and shape-varied per post (sections `###`/`####`, one-level blockquotes, compact tables, lists/checklists, separators, a code block only for formulas). The per-account-category `prompt` (editable in the dashboard) customizes the generator. Caption auto-appends `#1section`.
+`services/openrouter.js` `generatePost({accountName, categoryName, prompt})` → AI returns strict JSON `{hook, content, caption, conclusion}`. `content` is multi-line Markdown: short (under ~45 words) and shape-varied per post (sections `###`/`####`, one-level blockquotes, compact tables, lists/checklists, separators, a code block only for formulas). `conclusion` is one plain-text takeaway sentence (max ~18 words) printed on the CTA card. An explicit `OUTPUT_CONTRACT` is appended to every request (so the field is generated even when the DB holds an older base-prompt revision). The per-account-category `prompt` (editable in the dashboard) customizes the generator. Caption auto-appends `#1section`.
 
 Supported Markdown (CSS in `builder/unified.html`): h1–h6, bold/italic/strike/underline/`<mark>`/`<small>`/`<kbd>`/sub/sup, inline code (dark pill, white text), code blocks, paragraphs + `<br>`, `---`, one-level blockquotes (nested renders muted), nested `ul`/`ol`/task lists, tables with `:---`/`:---:`/`---:` alignment, links, images. Not supported by design: Mermaid, LaTeX math, raw HTML beyond those tags.
 

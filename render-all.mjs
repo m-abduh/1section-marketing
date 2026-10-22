@@ -164,6 +164,22 @@ Don't just work more.
 const ACCOUNT = "1section.finance";
 const ACCOUNT_LINK = "finance.1section.com";
 
+// Sample takeaways for the CTA end card (the real pipeline gets these from the AI).
+const CONCLUSIONS = {
+  "Story": "Money follows the problems you learn to solve.",
+  "Myth": "Effort without direction just makes the wrong path shorter.",
+  "Contrarian": "Design the behavior first, then rely on motivation.",
+  "Unpopular Truth": "People pay for outcomes, not for how clever the idea is.",
+  "Reframe": "Every failure hands you information you can act on.",
+  "Q&A": "Knowledge creates potential; execution creates results.",
+  "Compare": "Activity fills the day, outcomes build the business.",
+  "Problem → Solution": "Change the system before blaming your willpower.",
+  "Warning": "Capability is easy to prove; demand is what you need.",
+  "Tips": "Starting small is what makes consistency possible.",
+  "Formula": "Value comes from solving a real problem at scale.",
+  "Stat": "A thousand followers means nothing without demand.",
+};
+
 async function main() {
   let i = 1;
   for (const s of SAMPLES) {
@@ -171,7 +187,7 @@ async function main() {
     const out = join(OUT, `${s.name}-${ts}.mp4`);
     console.log(`\n[${i}/${SAMPLES.length}] Rendering "${s.name}" (${s.hook}) ...`);
     try {
-      await renderPost({ hook: s.hook, content: s.content, category: s.name, account: ACCOUNT, account_link: ACCOUNT_LINK }, out);
+      await renderPost({ hook: s.hook, content: s.content, category: s.name, account: ACCOUNT, account_link: ACCOUNT_LINK, conclusion: CONCLUSIONS[s.name] }, out);
       console.log(`  ✅ ${s.name} done in ${((Date.now() - ts) / 1000).toFixed(1)}s -> ${out}`);
     } catch (e) {
       console.error(`  ❌ ${s.name} FAILED: ${e.message}`);

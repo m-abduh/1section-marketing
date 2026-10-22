@@ -51,6 +51,26 @@ const PAPER_FILLS = [
   "#f1f0ee",
 ];
 
+// Dark CTA end-card accents. One accent per post — used only for small marks,
+// labels and the link border, never as a large fill.
+const CTA_ACCENTS = [
+  "#ffb454",
+  "#57d9a3",
+  "#6ea8ff",
+  "#f7768e",
+  "#c792ea",
+  "#ffd166",
+  "#4fd1c5",
+  "#ff9e64",
+];
+
+const escapeHtml = (s) =>
+  String(s == null ? "" : s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
 // Try to fit the rendered markdown into the 1350px slide by scaling the
 // markdown wrapper down when it would otherwise overflow. Keeps every item on one frame.
 const FIT_SCRIPT = `
@@ -301,7 +321,7 @@ export function normalizeMarkdownHtml(html) {
   return out;
 }
 
-export async function renderPost({ hook, content, category, account, account_link, content_text, index }, outputPath) {
+export async function renderPost({ hook, content, category, account, account_link, content_text, conclusion, index }, outputPath) {
   const htmlTpl = readFileSync(join(BUILDER, "unified.html"), "utf-8");
   const bg = PAPER_FILLS[Math.floor(Math.random() * PAPER_FILLS.length)];
 
@@ -322,13 +342,29 @@ export async function renderPost({ hook, content, category, account, account_lin
   const accountLinkHead = dot > 0 ? link.slice(0, dot) : link;
   const accountLinkTail = dot > 0 ? link.slice(dot) : "";
 
+  // The CTA card closes the video with the takeaway. If the AI did not return a
+  // conclusion (older stored posts), fall back to the hook so the card is never blank.
+  // Keep it to one clean sentence: 5 seconds is short, so anything longer gets trimmed.
+  const cleanConclusion = (value) => {
+    let text = String(value || "")
+      .replace(/\*\*|__|~~|`/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    text = text.split(/(?<=[.!?])\s+/)[0] || text;
+    if (text.length > 150) text = text.slice(0, 147).replace(/\s+\S*$/, "") + "…";
+    return text;
+  };
+  const conclusionText = cleanConclusion(conclusion) || String(hook || "").trim();
+
   const data = {
     content: htmlContent,
-    category: category || "",
-    account: account || "",
-    account_link: link,
-    account_link_head: accountLinkHead,
-    account_link_tail: accountLinkTail,
+    category: escapeHtml(category || ""),
+    account: escapeHtml(account || ""),
+    account_link: escapeHtml(link),
+    account_link_head: escapeHtml(accountLinkHead),
+    account_link_tail: escapeHtml(accountLinkTail),
+    conclusion: escapeHtml(conclusionText),
+    cta_accent: CTA_ACCENTS[Math.floor(Math.random() * CTA_ACCENTS.length)],
     bg_fill: bg,
   };
   let html = renderTemplate(htmlTpl, data);
@@ -351,15 +387,15 @@ export async function renderPost({ hook, content, category, account, account_lin
     await new Promise((resolve, reject) => {
       const ff = spawn("ffmpeg", [
         "-y", "-i", musicFile,
-        "-t", "15",
-        "-af", "afade=t=out:st=11:d=4",
+        "-t", "25",
+        "-af", "afade=t=out:st=21:d=4",
         "-c:a", "libmp3lame", "-q:a", "2",
         bgmPath
       ]);
       ff.on("close", c => c === 0 ? resolve() : reject(new Error(`ffmpeg exited ${c}`)));
       ff.on("error", reject);
     });
-    const audio = `<audio id="bgm" src="./_bgm.mp3" data-start="0" data-duration="15" data-volume="0.3" data-has-audio="true"></audio>`;
+    const audio = `<audio id="bgm" src="./_bgm.mp3" data-start="0" data-duration="25" data-volume="0.3" data-has-audio="true"></audio>`;
     html = html.replace("</div>", audio + "\n</div>");
   }
 
@@ -368,7 +404,7 @@ export async function renderPost({ hook, content, category, account, account_lin
   return new Promise((resolve, reject) => {
     const args = ["hyperframes", "render", BUILDER, "-c", "_render.html", "-o", outputPath, "--quality", "draft"];
     const child = spawn("npx", args);
-    const timer = setTimeout(() => { child.kill("SIGKILL"); reject(new Error("render timed out")); }, 180000);
+    const timer = setTimeout(() => { child.kill("SIGKILL"); reject(new Error("render timed out")); }, 300000);
     child.stdout.on("data", d => process.stdout.write(d));
     child.stderr.on("data", d => process.stderr.write(d));
     child.on("close", code => { clearTimeout(timer); code === 0 ? resolve() : reject(new Error(`render exited ${code}`)); });
