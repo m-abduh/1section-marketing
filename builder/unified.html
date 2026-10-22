@@ -122,11 +122,10 @@ html,body{font-family:'Satoshi',system-ui,sans-serif;background:var(--paper);col
 .cta-clip > *{position:relative;z-index:1}
 .cta-clip > .cta-bg,.cta-clip > .cta-grid{position:absolute;z-index:0}
 .cta-inner{display:flex;flex-direction:column;align-items:center;width:100%}
-.cta-logo{display:flex;align-items:center;gap:14px}
-.cta-mark{width:56px;height:56px;border-radius:16px;background:#fff;color:#08090c;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;flex:none}
-.cta-word{font-size:34px;font-weight:800;letter-spacing:-.6px;line-height:1;color:#fff}
-.cta-sub{font-size:11px;font-weight:700;letter-spacing:.26em;color:rgba(255,255,255,.55);text-transform:uppercase;margin-top:5px}
-.cta-main{margin-top:62px;display:flex;flex-direction:column;align-items:center;width:100%}
+.cta-logo{display:flex;flex-direction:column;align-items:center;gap:7px}
+.cta-word{font-size:46px;font-weight:800;letter-spacing:-.8px;line-height:1;color:#fff}
+.cta-niche{font-size:16px;font-weight:600;letter-spacing:.18em;color:rgba(255,255,255,.55)}
+.cta-main{margin-top:58px;display:flex;flex-direction:column;align-items:center;width:100%}
 .cta-eyebrow{display:flex;align-items:center;justify-content:center;gap:14px;font-size:15px;font-weight:800;letter-spacing:.24em;text-transform:uppercase;color:rgba(255,255,255,.55)}
 .cta-eyebrow:before,.cta-eyebrow:after{content:"";width:34px;height:1px;background:rgba(255,255,255,.22);display:block}
 .cta-conclusion{margin-top:20px;font-size:54px;font-weight:700;line-height:1.22;letter-spacing:-1.1px;color:#fff;max-width:900px;text-align:center;text-wrap:balance}
@@ -138,9 +137,7 @@ html,body{font-family:'Satoshi',system-ui,sans-serif;background:var(--paper);col
 .cta-link-label{margin-top:40px;font-size:17px;font-weight:600;letter-spacing:.04em;color:rgba(255,255,255,.55)}
 .cta-link{margin-top:13px;display:inline-flex;align-items:center;gap:13px;border:1.5px solid rgba(255,255,255,.22);background:rgba(255,255,255,.04);border-radius:16px;padding:15px 22px;font-size:31px;font-weight:600}
 .cta-link .ico{width:27px;height:27px;color:#fff;flex:none}
-.cta-link .cta-url{display:inline-block;white-space:nowrap}
-.cta-link .head{font-weight:800;color:#fff}
-.cta-link .tail{color:rgba(255,255,255,.6);font-weight:500}
+.cta-link .cta-url{display:inline-block;white-space:nowrap;font-weight:700;color:#fff}
 .cta-link .arrow{margin-left:9px;color:#fff;font-weight:800}
 </style>
 </head>
@@ -176,15 +173,12 @@ html,body{font-family:'Satoshi',system-ui,sans-serif;background:var(--paper);col
   <div class="cta-grid"></div>
   <div class="cta-inner">
     <div class="cta-logo">
-      <div class="cta-mark">1</div>
-      <div>
-        <div class="cta-word">1section</div>
-        <div class="cta-sub">Marketing</div>
-      </div>
+      <div class="cta-word">1section</div>
+      <div class="cta-niche">{{niche}}</div>
     </div>
 
     <div class="cta-main">
-      <div class="cta-eyebrow">The takeaway</div>
+      <div class="cta-eyebrow">The bottom line</div>
       <p class="cta-conclusion">{{conclusion}}</p>
     </div>
 
@@ -193,10 +187,10 @@ html,body{font-family:'Satoshi',system-ui,sans-serif;background:var(--paper);col
       <div class="cta-follow-label">Follow for more</div>
       <div class="cta-follow"><span class="at">@</span><span class="handle">{{account}}</span></div>
 
-      <div class="cta-link-label">Want the full breakdown?</div>
+      <div class="cta-link-label">Want a deeper breakdown?</div>
       <div class="cta-link">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        <span class="cta-url"><span class="head">{{account_link_head}}</span><span class="tail">{{account_link_tail}}</span></span>
+        <span class="cta-url">{{account_link}}</span>
         <span class="arrow">→</span>
       </div>
     </div>

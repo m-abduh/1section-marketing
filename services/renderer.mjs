@@ -350,6 +350,7 @@ export async function renderPost({ hook, content, category, account, account_lin
     account_link: escapeHtml(link),
     account_link_head: escapeHtml(accountLinkHead),
     account_link_tail: escapeHtml(accountLinkTail),
+    niche: escapeHtml(accountLinkHead),
     conclusion: escapeHtml(conclusionText),
     bg_fill: bg,
   };
