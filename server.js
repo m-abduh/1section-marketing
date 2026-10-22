@@ -9,6 +9,7 @@ import { startScheduler } from "./scheduler.js";
 import { runPipeline } from "./pipeline.js";
 import { store } from "./db.mjs";
 import { getSettings } from "./scheduler.js";
+import { getAnalytics } from "./services/analytics.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -78,6 +79,17 @@ app.get("/", (req, res) => {
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });
+});
+
+// Read-only channel analytics (Buffer aggregated metrics + local post stats).
+app.get("/api/analytics", async (req, res) => {
+  try {
+    const raw = parseInt(req.query.days, 10);
+    const days = Number.isFinite(raw) ? Math.min(90, Math.max(1, raw)) : 30;
+    res.json(await getAnalytics(days));
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) });
+  }
 });
 
 // ---------- Music ----------

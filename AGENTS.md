@@ -50,7 +50,12 @@ Arrow chains are auto-detected by `chainifyMarkdown()` and wrapped in a centered
 - `/api/accounts/:id/categories` (GET list; PUT full-replace mapping; `/…/:categoryId/prompt` to set a prompt)
 - `/api/videos` (list by `?account_id=`), `/api/videos/:id/retry`, `/api/videos/:id` (DELETE)
 - `/api/settings` (GET/PUT) — `videos_per_day`, `window_start`, `window_end`, `tz`
+- `/api/generate` (POST) — run one pipeline slot now (used by the dashboard button)
+- `/api/analytics?days=30` (GET) — **read-only** dashboard analytics: Buffer `aggregatedPostMetrics` per account (posts, views, reactions, comments, engagement rate) + local DB stats (generated/success/failed, 14-day activity, category mix). Implemented in `services/analytics.mjs`; 5-min metric cache, 1-hour channel cache, accounts fetched with concurrency 4. Never writes state.
 - Static: `/videos/*` (output dir), `/music/*`
+
+## Dashboard (`views/index.ejs`)
+Single-file EJS dashboard (no frontend build): dark sidebar (accounts, settings, categories, music) + light main area with KPI cards, 14-day activity bars, category mix and a per-account channel table (real Buffer metrics). Selecting an account opens a panel with Videos and Categories & prompts tabs (prompt accordions). All data flows through the REST API above; the UI never mutates state except through those endpoints.
 
 ## Scheduler
 `cron`-based, `videos_per_day` equally spaced across the `window_start`–`window_end` window in `tz` (scheduler.js `buildSchedule`/`startScheduler`). Set `DISABLE_SCHEDULER=1` to run without cron. Times recomputed from settings each boot.
