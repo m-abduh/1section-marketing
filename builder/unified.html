@@ -99,43 +99,49 @@ html,body{font-family:'Satoshi',system-ui,sans-serif;background:var(--paper);col
 .footer .flink-head{font-weight:800;color:var(--ink)}
 .footer .flink-rest{font-weight:500;color:var(--muted)}
 
-/* ---------- CTA end card (20-25s) ---------- */
+/* ---------- CTA end card (20-25s): dark, white, fully centered ---------- */
 .cta-clip{
   z-index:2;
-  background:
-    radial-gradient(120% 85% at 88% 112%, color-mix(in srgb, var(--cta-accent) 20%, transparent) 0%, transparent 62%),
-    radial-gradient(90% 60% at 8% -10%, rgba(255,255,255,.05) 0%, transparent 60%),
-    linear-gradient(158deg,#0d1017 0%,#090a0d 58%,#07080a 100%);
-  color:#f4f6f9;
-  padding:85px 85px 92px;
-  justify-content:space-between;
+  background:#08090c;
+  color:#fff;
+  padding:85px;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
 }
-.cta-grid{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.5;
+.cta-bg{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(90% 70% at 50% 8%,#16181f 0%,transparent 62%),
+    radial-gradient(120% 90% at 50% 115%,#0d0f14 0%,transparent 70%),
+    linear-gradient(180deg,#0b0c10 0%,#07080a 100%)}
+.cta-grid{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.45;
   background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
   background-size:84px 84px;
-  -webkit-mask-image:radial-gradient(ellipse at 50% 26%,#000 0%,transparent 72%);
-  mask-image:radial-gradient(ellipse at 50% 26%,#000 0%,transparent 72%)}
+  -webkit-mask-image:radial-gradient(ellipse at 50% 50%,#000 0%,transparent 70%);
+  mask-image:radial-gradient(ellipse at 50% 50%,#000 0%,transparent 70%)}
 .cta-clip > *{position:relative;z-index:1}
-.cta-clip > .cta-grid{position:absolute;z-index:0}
-.cta-logo{display:flex;align-items:center;gap:16px}
-.cta-mark{width:56px;height:56px;border-radius:16px;background:#f4f6f9;color:#0a0b0f;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;flex:none}
-.cta-word{font-size:34px;font-weight:800;letter-spacing:-.6px;line-height:1}
-.cta-sub{font-size:11px;font-weight:700;letter-spacing:.26em;color:#8f96a3;text-transform:uppercase;margin-top:5px}
-.cta-dot{width:9px;height:9px;border-radius:50%;background:var(--cta-accent);margin-left:2px}
-.cta-main{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
-.cta-eyebrow{display:flex;align-items:center;gap:12px;font-size:15px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--cta-accent);margin-bottom:22px}
-.cta-eyebrow:before{content:"";width:28px;height:2px;background:var(--cta-accent);display:block}
-.cta-conclusion{font-size:56px;font-weight:700;line-height:1.22;letter-spacing:-1.2px;color:#f4f6f9;max-width:940px}
-.cta-foot{padding-top:0}
-.cta-rule{height:1px;background:rgba(255,255,255,.14);margin-bottom:38px}
-.cta-follow-label{font-size:15px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#8f96a3;margin-bottom:8px}
-.cta-follow{display:flex;align-items:baseline;gap:2px;font-size:62px;font-weight:900;letter-spacing:-1.4px;line-height:1.05}
-.cta-follow .at{color:var(--cta-accent);font-weight:700}
-.cta-link{margin-top:34px;display:inline-flex;align-items:center;gap:14px;border:1.5px solid color-mix(in srgb,var(--cta-accent) 42%,rgba(255,255,255,.14));background:rgba(255,255,255,.035);border-radius:16px;padding:15px 22px;font-size:32px;font-weight:600}
-.cta-link .ico{width:28px;height:28px;color:var(--cta-accent);flex:none}
+.cta-clip > .cta-bg,.cta-clip > .cta-grid{position:absolute;z-index:0}
+.cta-inner{display:flex;flex-direction:column;align-items:center;width:100%}
+.cta-logo{display:flex;align-items:center;gap:14px}
+.cta-mark{width:56px;height:56px;border-radius:16px;background:#fff;color:#08090c;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;flex:none}
+.cta-word{font-size:34px;font-weight:800;letter-spacing:-.6px;line-height:1;color:#fff}
+.cta-sub{font-size:11px;font-weight:700;letter-spacing:.26em;color:rgba(255,255,255,.55);text-transform:uppercase;margin-top:5px}
+.cta-main{margin-top:62px;display:flex;flex-direction:column;align-items:center;width:100%}
+.cta-eyebrow{display:flex;align-items:center;justify-content:center;gap:14px;font-size:15px;font-weight:800;letter-spacing:.24em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.cta-eyebrow:before,.cta-eyebrow:after{content:"";width:34px;height:1px;background:rgba(255,255,255,.22);display:block}
+.cta-conclusion{margin-top:20px;font-size:54px;font-weight:700;line-height:1.22;letter-spacing:-1.1px;color:#fff;max-width:900px;text-align:center;text-wrap:balance}
+.cta-foot{margin-top:58px;display:flex;flex-direction:column;align-items:center;width:100%}
+.cta-rule{width:120px;height:1px;background:rgba(255,255,255,.18);margin-bottom:34px}
+.cta-follow-label{font-size:14px;font-weight:800;letter-spacing:.24em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:8px}
+.cta-follow{display:flex;align-items:baseline;justify-content:center;gap:2px;font-size:60px;font-weight:900;letter-spacing:-1.3px;line-height:1.05;color:#fff}
+.cta-follow .at{color:#fff;font-weight:600}
+.cta-link-label{margin-top:40px;font-size:17px;font-weight:600;letter-spacing:.04em;color:rgba(255,255,255,.55)}
+.cta-link{margin-top:13px;display:inline-flex;align-items:center;gap:13px;border:1.5px solid rgba(255,255,255,.22);background:rgba(255,255,255,.04);border-radius:16px;padding:15px 22px;font-size:31px;font-weight:600}
+.cta-link .ico{width:27px;height:27px;color:#fff;flex:none}
+.cta-link .cta-url{display:inline-block;white-space:nowrap}
 .cta-link .head{font-weight:800;color:#fff}
-.cta-link .tail{color:#9aa1ad;font-weight:500}
-.cta-link .arrow{margin-left:10px;color:var(--cta-accent);font-weight:800}
+.cta-link .tail{color:rgba(255,255,255,.6);font-weight:500}
+.cta-link .arrow{margin-left:9px;color:#fff;font-weight:800}
 </style>
 </head>
 <body>
@@ -165,30 +171,34 @@ html,body{font-family:'Satoshi',system-ui,sans-serif;background:var(--paper);col
   </div>
 </section>
 
-<section class="clip cta-clip" data-start="20" data-duration="5" style="--cta-accent:{{cta_accent}}">
+<section class="clip cta-clip" data-start="20" data-duration="5">
+  <div class="cta-bg"></div>
   <div class="cta-grid"></div>
-  <div class="cta-logo">
-    <div class="cta-mark">1</div>
-    <div>
-      <div class="cta-word">1section</div>
-      <div class="cta-sub">Marketing</div>
+  <div class="cta-inner">
+    <div class="cta-logo">
+      <div class="cta-mark">1</div>
+      <div>
+        <div class="cta-word">1section</div>
+        <div class="cta-sub">Marketing</div>
+      </div>
     </div>
-    <span class="cta-dot"></span>
-  </div>
 
-  <div class="cta-main">
-    <div class="cta-eyebrow">The takeaway</div>
-    <p class="cta-conclusion">{{conclusion}}</p>
-  </div>
+    <div class="cta-main">
+      <div class="cta-eyebrow">The takeaway</div>
+      <p class="cta-conclusion">{{conclusion}}</p>
+    </div>
 
-  <div class="cta-foot">
-    <div class="cta-rule"></div>
-    <div class="cta-follow-label">Follow for more</div>
-    <div class="cta-follow"><span class="at">@</span><span class="handle">{{account}}</span></div>
-    <div class="cta-link">
-      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-      <span class="head">{{account_link_head}}</span><span class="tail">{{account_link_tail}}</span>
-      <span class="arrow">→</span>
+    <div class="cta-foot">
+      <div class="cta-rule"></div>
+      <div class="cta-follow-label">Follow for more</div>
+      <div class="cta-follow"><span class="at">@</span><span class="handle">{{account}}</span></div>
+
+      <div class="cta-link-label">Want the full breakdown?</div>
+      <div class="cta-link">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <span class="cta-url"><span class="head">{{account_link_head}}</span><span class="tail">{{account_link_tail}}</span></span>
+        <span class="arrow">→</span>
+      </div>
     </div>
   </div>
 </section>

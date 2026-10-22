@@ -51,19 +51,6 @@ const PAPER_FILLS = [
   "#f1f0ee",
 ];
 
-// Dark CTA end-card accents. One accent per post — used only for small marks,
-// labels and the link border, never as a large fill.
-const CTA_ACCENTS = [
-  "#ffb454",
-  "#57d9a3",
-  "#6ea8ff",
-  "#f7768e",
-  "#c792ea",
-  "#ffd166",
-  "#4fd1c5",
-  "#ff9e64",
-];
-
 const escapeHtml = (s) =>
   String(s == null ? "" : s)
     .replace(/&/g, "&amp;")
@@ -364,7 +351,6 @@ export async function renderPost({ hook, content, category, account, account_lin
     account_link_head: escapeHtml(accountLinkHead),
     account_link_tail: escapeHtml(accountLinkTail),
     conclusion: escapeHtml(conclusionText),
-    cta_accent: CTA_ACCENTS[Math.floor(Math.random() * CTA_ACCENTS.length)],
     bg_fill: bg,
   };
   let html = renderTemplate(htmlTpl, data);
