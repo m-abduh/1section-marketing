@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { CATEGORY_SEEDS, LEGACY_SEED_NAMES } from "./seed.mjs";
+import { DEFAULT_BASE_PROMPT } from "./services/base-prompt.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_PATH = process.env.DB_PATH || join(__dirname, "db.sqlite");
@@ -70,40 +71,18 @@ function getSetting(key, fallback = "") {
   return row ? row.value : fallback;
 }
 
-const DEFAULT_AI_BASE_PROMPT = `You are a senior copywriter writing short, punchy, scroll-stopping PERSONAL FINANCE content for a video channel. Every claim must be financially correct — real theory, accurate numbers, no get-rich-quick nonsense.
-
-Voice: SHORT, DENSE, EMOTIONAL, PERSONAL. Speak directly to the viewer as "you" — like a mentor who has been through the same money struggles. Every line must earn its place; never long-winded, never generic.
-
-"hook" MUST be 7 to 14 words: a strong, emotional, specific scroll-stopping statement or question. It becomes the H2 title on the slide.
-"caption" MUST be one short personal paragraph (no hashtags, no @ mentions).
-
-"content" is the Markdown BODY printed below the hook title — GitHub-README-style, rich and visual, rendered as ONE static slide. Use the full Markdown vocabulary where the source instructions ask for it: --thematic breaks, **bold** (1-2 key words max), *italic*, ~~strikethrough~~, blockquotes (>), "- " lists, \`\`\`text code fences, and | | tables. Bold is used SPARINGLY — never bold an entire line, blockquote, table cell, or whole code block; inside blockquotes (>) and \`\`\`text code fences keep the text normal-weight by default and bold only a word or two when it truly matters. NEVER use emojis or emoticons — only text and numbers; symbols (× = ≠ ↓) only where meaningful. Leave a BLANK line between sections so they breathe. Keep every line short enough to fit on one screen. The source instructions define the exact structure of "content" — follow them first.
-
-Return ONLY valid JSON matching EXACTLY this shape:
-{
-  "hook": "a 7-14 word strong hook line",
-  "content": "the Markdown body following the source instructions (no H1, no title)",
-  "caption": "one short paragraph for the social post caption (no hashtags, no @ mentions)"
-}`;
-
+// Seed the base prompt once. The text lives in services/base-prompt.mjs so the
+// DB seed and the generator default can never drift apart.
 db.prepare(
   "INSERT INTO settings(key,value) VALUES('ai_base_prompt',?) ON CONFLICT(key) DO NOTHING"
-).run(DEFAULT_AI_BASE_PROMPT);
+).run(DEFAULT_BASE_PROMPT);
 
-// Migration: old saved base prompts (pre-README rewrite) must not silently
-// keep producing the old short-form content. Overwrite only if a legacy copy
-// is present, so a user's newer manual edits are never clobbered.
+// Migration: replace only the old hard-coded finance-era prompt shipped with
+// the single-niche version. Any prompt edited in the dashboard survives.
 db.prepare(
-  "UPDATE settings SET value=? WHERE key='ai_base_prompt' AND value LIKE '%2 to 5 SHORT lines%'"
-).run(DEFAULT_AI_BASE_PROMPT);
+  "UPDATE settings SET value=? WHERE key='ai_base_prompt' AND value LIKE '%PERSONAL FINANCE content for a video channel%'"
+).run(DEFAULT_BASE_PROMPT);
 
-// Migration 2: README-era prompts that predate the "bold sparingly" rule
-// (they contain the generic bold hint but not the SPARINGLY guidance). This
-// catches DB values written before this rule existed, without touching a
-// prompt a user has since customized with that rule already included.
-db.prepare(
-  "UPDATE settings SET value=? WHERE key='ai_base_prompt' AND value LIKE '%1-2 key words max%' AND value NOT LIKE '%SPARINGLY%'"
-).run(DEFAULT_AI_BASE_PROMPT);
 function setSetting(key, value) {
   db.prepare(
     "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value"

@@ -38,7 +38,11 @@ Each scheduled run posts **one** (account, category) pair, advancing like a flat
 - `renderPost({hook, content, category, account, account_link}, outputPath)` in renderer writes the filled `_render.html` then spawns hyperframes. `videogen.generateVideo` caps concurrency via `RENDER_CONCURRENCY` (default 1); output file is `<account>-<epoch>.mp4`.
 
 ## OpenRouter content contract
-`services/openrouter.js` `generatePost({accountName, categoryName, prompt})` → AI returns strict JSON `{hook, content, caption}`. `content` is 2–5 short lines joined by `\n`. The per-account-category `prompt` (editable in the dashboard) customizes the generator. Caption auto-appends `#1section`.
+`services/openrouter.js` `generatePost({accountName, categoryName, prompt})` → AI returns strict JSON `{hook, content, caption}`. `content` is multi-line Markdown: short (under ~45 words) and shape-varied per post (sections `###`/`####`, one-level blockquotes, compact tables, lists/checklists, separators, a code block only for formulas). The per-account-category `prompt` (editable in the dashboard) customizes the generator. Caption auto-appends `#1section`.
+
+Supported Markdown (CSS in `builder/unified.html`): h1–h6, bold/italic/strike/underline/`<mark>`/`<small>`/`<kbd>`/sub/sup, inline code (dark pill, white text), code blocks, paragraphs + `<br>`, `---`, one-level blockquotes (nested renders muted), nested `ul`/`ol`/task lists, tables with `:---`/`:---:`/`---:` alignment, links, images. Not supported by design: Mermaid, LaTeX math, raw HTML beyond those tags.
+
+Arrow chains are auto-detected by `chainifyMarkdown()` and wrapped in a centered bordered card (`.chain`): either `A → B → C` (one line, or several short lines) or steps ending in `↓` (one per line, or `A ↓ B ↓ C`). This is the "sequence" layout the category prompts lean on, so steps should stay 2–5 words.
 
 ## Server / API
 `server.js` serves the EJS dashboard (`views/index.ejs`) + REST API:
