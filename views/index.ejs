@@ -376,6 +376,7 @@ input,select,textarea{font-family:inherit}
 
 <script>
 const state = { accounts: [], categories: [], selectedId: null };
+const videoCache = new Map();
 let accountCats = [];
 let musicFiles = [];
 let analyticsDays = 30;
@@ -621,6 +622,8 @@ async function removePrompt(categoryId) {
 async function renderVideos() {
   const el = document.getElementById('videoList');
   const videos = await api('/api/videos?account_id=' + state.selectedId);
+  videoCache.clear();
+  videos.forEach(v => videoCache.set(v.id, v));
   if (!videos.length) { el.innerHTML = '<div class="empty">No videos for this account yet</div>'; return; }
   el.innerHTML = '';
   videos.forEach(v => {
@@ -637,6 +640,7 @@ async function renderVideos() {
       </div>
       <div class="acts">
         ${viewHref ? `<a class="btn btn-sm" href="${viewHref}" target="_blank">View</a>` : ''}
+        <button class="btn btn-sm" title="Copy content as JSON" onclick="copyVideoJson(${v.id}, this)">Copy JSON</button>
         ${v.status !== 'success' ? `<button class="btn btn-sm btn-primary" onclick="retry(${v.id})">Retry</button>` : ''}
         <button class="btn btn-sm btn-danger" onclick="delVideo(${v.id})">Delete</button>
       </div>`;
@@ -646,6 +650,57 @@ async function renderVideos() {
 
 async function retry(id) { await api('/api/videos/' + id + '/retry', { method: 'POST' }); toast('Retry done'); renderVideos(); }
 async function delVideo(id) { if (!confirm('Delete video?')) return; await api('/api/videos/' + id, { method: 'DELETE' }); renderVideos(); }
+
+function videoContentJson(v) {
+  let parsed = {};
+  try { parsed = v.content_json ? JSON.parse(v.content_json) : {}; } catch {}
+  return {
+    id: v.id,
+    account: v.account_name || '',
+    category: v.category_name || '',
+    status: v.status || '',
+    hook: v.hook || parsed.hook || '',
+    content: v.content || parsed.content || '',
+    caption: v.caption || parsed.caption || '',
+    conclusion: parsed.conclusion || '',
+    created_at: v.created_at || null,
+    posted_at: v.posted_at || null
+  };
+}
+
+async function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try { await navigator.clipboard.writeText(text); return true; } catch {}
+  }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.top = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch {}
+  ta.remove();
+  return ok;
+}
+
+async function copyVideoJson(id, btn) {
+  const v = videoCache.get(id);
+  if (!v) { toast('Video not loaded — refresh and try again', true); return; }
+  try {
+    const text = JSON.stringify(videoContentJson(v), null, 2);
+    if (!(await copyText(text))) throw new Error('Clipboard unavailable');
+    toast('Content JSON copied');
+    if (btn) {
+      const label = btn.textContent;
+      btn.textContent = 'Copied';
+      setTimeout(() => { btn.textContent = label; }, 1400);
+    }
+  } catch (e) {
+    toast('Copy failed: ' + e.message, true);
+  }
+}
 
 async function generateNow() {
   const btn = document.getElementById('genNowBtn');
