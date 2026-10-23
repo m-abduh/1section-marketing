@@ -11,6 +11,7 @@ import { runPipeline } from "./pipeline.js";
 import { store } from "./db.mjs";
 import { getSettings } from "./scheduler.js";
 import { getAnalytics } from "./services/analytics.mjs";
+import { getFullAnalytics } from "./services/analytics-full.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -116,6 +117,23 @@ app.get("/", (req, res) => {
     failed,
     settings: getSettings(),
   });
+});
+
+app.get("/analytics", (req, res) => {
+  res.render("analytics");
+});
+
+// Full read-only Buffer analytics + latest generated content per account.
+app.get("/api/analytics/full", async (req, res) => {
+  try {
+    const raw = parseInt(req.query.days, 10);
+    const days = Number.isFinite(raw) ? Math.min(90, Math.max(1, raw)) : 30;
+    const refresh = req.query.refresh === "1";
+    res.json(await getFullAnalytics(days, { refresh }));
+  } catch (err) {
+    console.error("[server] /api/analytics/full error:", err);
+    res.status(500).json({ error: String(err.message || err) });
+  }
 });
 
 // Read-only channel analytics (Buffer aggregated metrics + local post stats).

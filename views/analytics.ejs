@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics · 1section</title>
+<style>
+:root{
+  --bg:#f5f5f2;--panel:#fff;--panel-2:#fafaf7;
+  --ink:#15171b;--ink-2:#3d4047;--muted:#71757d;--faint:#9a9da4;
+  --line:#e7e5dd;--line-2:#d9d6cc;
+  --accent:#2f6bff;--accent-soft:#eaf0ff;
+  --ok:#0e9f6e;--ok-soft:#e7f7f0;--bad:#d64545;--bad-soft:#fdecec;--warn:#b7791f;
+  --r:16px;--r-sm:10px;
+  --shadow:0 1px 2px rgba(17,19,23,.04),0 14px 30px -22px rgba(17,19,23,.45);
+  --side:#111317;--side-2:#171a1f;--side-line:#252a31;--side-ink:#e9eaee;--side-muted:#8d929b;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+.app{display:grid;grid-template-columns:272px minmax(0,1fr);min-height:100vh}
+
+/* sidebar */
+.sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--side);color:var(--side-ink);display:flex;flex-direction:column}
+.brand{display:flex;align-items:center;gap:12px;padding:22px 20px 18px}
+.brand .mark{width:38px;height:38px;border-radius:12px;background:linear-gradient(145deg,#2f6bff,#6f9bff);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;color:#fff;box-shadow:0 6px 18px -6px rgba(47,107,255,.8)}
+.brand .name{font-size:15px;font-weight:700;letter-spacing:-.01em}
+.brand .tag{font-size:11px;color:var(--side-muted);letter-spacing:.14em;text-transform:uppercase;margin-top:2px}
+.side-nav{display:flex;flex-direction:column;gap:2px;padding:0 12px 16px}
+.side-nav a{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:9px;color:var(--side-muted);text-decoration:none;font-size:13px;font-weight:600;border:1px solid transparent}
+.side-nav a:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.55}
+.side-nav a:hover{background:var(--side-2);border-color:var(--side-line);color:var(--side-ink)}
+.side-nav a.active{background:#1b2130;border-color:#31405f;color:#fff}
+.side-note{border-top:1px solid var(--side-line);padding:16px 20px;color:var(--side-muted);font-size:11.5px;line-height:1.6}
+.side-note strong{display:block;color:var(--side-ink);font-size:11px;letter-spacing:.13em;text-transform:uppercase;margin-bottom:7px}
+.side-note ul{list-style:none;display:flex;flex-direction:column;gap:7px}
+.side-note li{display:flex;gap:8px}
+.side-note li:before{content:"·";color:#6b8cff}
+
+/* main */
+.main{padding:26px 30px 60px;max-width:1600px;width:100%;min-width:0}
+.topbar{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:8px}
+.topbar h1{font-size:27px;font-weight:750;letter-spacing:-.03em}
+.topbar .sub{color:var(--muted);font-size:13px;margin-top:4px}
+.topbar-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.segmented{display:inline-flex;background:#ecebe5;border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+.segmented button{border:none;background:transparent;color:var(--muted);font:inherit;font-size:12px;font-weight:600;padding:6px 11px;border-radius:8px;cursor:pointer}
+.segmented button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.btn{border:1px solid var(--line-2);background:#fff;color:var(--ink);border-radius:10px;padding:8px 12px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#fbfbf8}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.primary:hover{background:#2a2d33}
+.meta-line{display:flex;align-items:center;gap:9px;flex-wrap:wrap;color:var(--muted);font-size:12.5px;margin:8px 0 18px}
+.meta-line .pill{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-radius:99px;padding:3px 8px}
+.pill.ok{background:var(--ok-soft);color:var(--ok);border:1px solid #cdeade}
+.pill.bad{background:var(--bad-soft);color:var(--bad);border:1px solid #f4cccc}
+.pill.neutral{background:#f2f1ec;color:var(--muted);border:1px solid #e8e6df}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:15px 16px;box-shadow:var(--shadow)}
+.kpi .lbl{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.kpi .val{font-size:26px;font-weight:750;letter-spacing:-.03em;margin-top:7px;line-height:1.05}
+.kpi .foot{font-size:11.5px;color:var(--faint);margin-top:6px}
+
+.account{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
+.account>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:14px;padding:16px 18px;user-select:none}
+.account>summary::-webkit-details-marker{display:none}
+.account>summary:after{content:"";width:7px;height:7px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);margin-left:auto;transition:.15s;flex:none}
+.account[open]>summary:after{transform:rotate(-135deg)}
+.avatar{width:42px;height:42px;border-radius:12px;background:linear-gradient(145deg,#2f6bff,#7aa0ff);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex:none;letter-spacing:-.02em}
+.acc-title h2{font-size:15px;font-weight:750;letter-spacing:-.02em}
+.acc-title p{font-size:11.5px;color:var(--faint);margin-top:3px}
+.acc-status{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.acc-body{padding:0 18px 20px;border-top:1px solid var(--line)}
+.mini-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;padding:14px 0 4px}
+.mini{background:var(--panel-2);border:1px solid #efeee8;border-radius:11px;padding:10px 12px}
+.mini .lbl{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.mini .val{font-size:17px;font-weight:750;letter-spacing:-.02em;margin-top:4px;font-variant-numeric:tabular-nums}
+.block{border-top:1px solid #f1efe9;padding-top:16px;margin-top:16px}
+.block-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.block-head h3{font-size:13px;font-weight:750;letter-spacing:-.01em}
+.block-head .hint{font-size:11.5px;color:var(--faint)}
+.table-wrap{overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch;border:1px solid #f0eee8;border-radius:11px}
+table.t{width:100%;border-collapse:collapse;font-size:12px}
+table.t th{text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:#fcfcfa}
+table.t td{padding:9px 12px;border-bottom:1px solid #f4f2ec;vertical-align:top}
+table.t tr:last-child td{border-bottom:none}
+table.t .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.t .nowrap{white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;padding:3px 7px;border-radius:99px;background:#f2f1ec;color:var(--muted);border:1px solid #e8e6df;white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok);border-color:#cdeade}
+.chip.bad{background:var(--bad-soft);color:var(--bad);border-color:#f4cccc}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;background:var(--faint);flex:none}
+.dot.ok{background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
+.dot.bad{background:var(--bad);box-shadow:0 0 0 3px var(--bad-soft)}
+.muted{color:var(--muted)}
+.small{font-size:11px}
+.post-text{max-width:420px;min-width:230px;color:var(--ink-2);line-height:1.45}
+.post-text a{color:var(--accent);text-decoration:none}
+.post-text a:hover{text-decoration:underline}
+details.sub{border:1px solid #f0eee8;border-radius:11px;padding:10px 12px;margin-bottom:8px;background:var(--panel-2)}
+details.sub>summary{list-style:none;cursor:pointer;font-size:12px;font-weight:650;display:flex;align-items:center;gap:8px}
+details.sub>summary::-webkit-details-marker{display:none}
+details.sub>summary:after{content:"+";margin-left:auto;color:var(--faint);font-weight:700}
+details.sub[open]>summary:after{content:"–"}
+details.sub .table-wrap{margin-top:10px;background:#fff}
+details.json-item{border:1px solid #f0eee8;border-radius:11px;margin-bottom:8px;background:var(--panel-2);overflow:hidden}
+details.json-item>summary{list-style:none;cursor:pointer;padding:11px 12px;font-size:12px;font-weight:650;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+details.json-item>summary::-webkit-details-marker{display:none}
+details.json-item>summary:after{content:"View JSON";margin-left:auto;color:var(--accent);font-size:11px;font-weight:650}
+details.json-item[open]>summary:after{content:"Hide JSON"}
+pre.json{margin:0;padding:12px 14px;border-top:1px solid #f0eee8;background:#0f1115;color:#d7dbe2;font:11.5px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow:auto;max-height:440px;white-space:pre}
+.json-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.error-box{background:var(--bad-soft);border:1px solid #f4cccc;color:#8f2f2f;border-radius:10px;padding:10px 12px;font-size:12px;margin:12px 0}
+.empty{color:var(--faint);font-size:12px;padding:12px 2px}
+.loading{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;padding:38px 0}
+.spinner{width:16px;height:16px;border-radius:50%;border:2px solid #dcdad2;border-top-color:var(--accent);animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin:12px 0 2px}
+.meta-item{background:var(--panel-2);border:1px solid #efeee8;border-radius:10px;padding:9px 11px;min-width:0}
+.meta-item .k{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.meta-item .v{font-size:12px;color:var(--ink-2);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+@media(max-width:900px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto;max-height:none}
+  .side-nav{flex-direction:row;flex-wrap:wrap;padding-bottom:10px}
+  .main{padding:20px 16px 48px}
+  .topbar{align-items:flex-start}
+  .post-text{max-width:300px;min-width:200px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark">1</div>
+      <div>
+        <div class="name">1section</div>
+        <div class="tag">Marketing</div>
+      </div>
+    </div>
+    <nav class="side-nav">
+      <a href="/">Overview</a>
+      <a href="/analytics" class="active">Analytics</a>
+    </nav>
+    <div class="side-note">
+      <strong>Data source</strong>
+      <ul>
+        <li>All Buffer metrics for every account</li>
+        <li>Every channel and organization Buffer returns</li>
+        <li>Latest 50 sent posts per account, with all post metrics</li>
+        <li>Latest 5 generated posts per account from our SQLite DB, as JSON</li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1>Analytics</h1>
+        <p class="sub">Complete Buffer analytics and generated content for every account</p>
+      </div>
+      <div class="topbar-actions">
+        <div class="segmented" id="rangePicker">
+          <button data-days="7" onclick="setRange(7)">7d</button>
+          <button data-days="30" class="on" onclick="setRange(30)">30d</button>
+          <button data-days="90" onclick="setRange(90)">90d</button>
+        </div>
+        <button class="btn" id="refreshBtn" onclick="load(true)">Refresh</button>
+        <button class="btn primary" id="downloadAllBtn" onclick="downloadAll()" disabled>Download all JSON</button>
+      </div>
+    </header>
+
+    <div class="meta-line" id="metaLine">
+      <span class="pill neutral">Buffer</span>
+      <span>Loading analytics…</span>
+    </div>
+
+    <div id="kpis" class="kpis"></div>
+    <div id="accounts"></div>
+    <div id="state" class="loading"><span class="spinner"></span><span>Fetching every Buffer account…</span></div>
+  </main>
+</div>
+
+<script>
+const state = { days: 30, data: null, loading: false };
+
+const METRIC_ORDER = ["postCount","views","reach","impressions","reactions","comments","shares","saves","clicks","follows","engagementRate","quotes","reposts","likes","viewers","averageTimeWatched","totalTimeWatched","freeSubscriptions","paidSubscriptions"];
+
+function esc(v){
+  return String(v == null ? "" : v)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+function fmt(n){
+  if (n == null || !Number.isFinite(Number(n))) return "—";
+  const v = Number(n);
+  if (Math.abs(v) >= 1000) return new Intl.NumberFormat("en-US").format(v);
+  if (!Number.isInteger(v)) return String(Math.round(v * 100) / 100);
+  return String(v);
+}
+function fmtMetric(m){
+  if (!m) return "—";
+  return fmt(m.value) + (m.unit === "percentage" ? "%" : "");
+}
+function metricLabel(type, metrics){
+  const m = (metrics || []).find((x) => x.type === type);
+  return m?.name || type;
+}
+function shortDate(value){
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return esc(value);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+function shortDateTime(value){
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return esc(value);
+  return d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+function initials(name){
+  const s = String(name || "?").replace(/^@/, "").replace(/[^a-zA-Z0-9]/g, "");
+  return esc((s.slice(0, 2) || "?").toUpperCase());
+}
+function serviceLabel(service){
+  return String(service || "").replace(/^./, (c) => c.toUpperCase());
+}
+function metricCell(m){
+  return `<td class="num">${m ? fmtMetric(m) : "—"}</td>`;
+}
+function postMetric(post, type){
+  return (post.metrics || []).find((m) => m.type === type);
+}
+function kpi(label, value, foot){
+  return `<div class="kpi"><div class="lbl">${esc(label)}</div><div class="val">${value}</div><div class="foot">${esc(foot || "")}</div></div>`;
+}
+
+function renderKpis(){
+  const d = state.data;
+  if (!d) return;
+  const local = d.totals.local;
+  const order = (t) => {
+    const i = METRIC_ORDER.indexOf(t);
+    return i < 0 ? 99 : i;
+  };
+  const metrics = [...(d.totals.buffer || [])].sort((a, b) => order(a.type) - order(b.type));
+  const cards = [
+    kpi("Accounts", `${d.summary.connected}/${d.summary.accounts}`, "Buffer connected"),
+    kpi("Channels", fmt(d.summary.channels), `${d.summary.organizations} organization${d.summary.organizations === 1 ? "" : "s"}`),
+    ...metrics.map((m) => kpi(
+      m.type === "postCount" ? "Buffer posts" : (m.name || m.type),
+      fmtMetric(m),
+      m.type === "postCount" ? `${d.range.days}-day range` : (m.type === "engagementRate" ? "Reactions ÷ views" : "Buffer aggregated")
+    )),
+    kpi("Generated locally", fmt(local.generated), `${fmt(local.success)} successful`),
+    kpi("Local success rate", `${fmt(local.successRate)}%`, `${fmt(local.failed)} failed`),
+  ];
+
+  document.getElementById("kpis").innerHTML = cards.join("");
+}
+
+function renderMeta(){
+  const d = state.data;
+  if (!d) return;
+  const when = new Date(d.generatedAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  document.getElementById("metaLine").innerHTML = `
+    <span class="pill neutral">Buffer</span>
+    <span><strong>${esc(String(d.range.days))}-day range</strong> · ${esc(shortDate(d.range.start))} – ${esc(shortDate(d.range.end))}</span>
+    <span>·</span>
+    <span>Updated ${esc(when)}</span>
+    <span>·</span>
+    <span>${fmt(d.summary.posts)} Buffer posts loaded</span>
+  `;
+}
+
+function renderChannels(a){
+  const channels = a.buffer?.channels || [];
+  if (!channels.length) return `<div class="empty">No channels returned by Buffer.</div>`;
+  return `
+    <div class="table-wrap">
+      <table class="t">
+        <thead><tr>
+          <th>Service</th><th>Channel</th><th>Type</th><th>Descriptor</th><th>Status</th><th>Timezone</th><th>Created</th><th>Link</th>
+        </tr></thead>
+        <tbody>
+          ${channels.map((c) => {
+            const flags = [];
+            if (c.isDisconnected) flags.push('<span class="chip bad">Disconnected</span>');
+            if (c.isLocked) flags.push('<span class="chip bad">Locked</span>');
+            if (c.isQueuePaused) flags.push('<span class="chip">Queue paused</span>');
+            if (!flags.length) flags.push('<span class="chip ok">Active</span>');
+            return `<tr>
+              <td><span class="chip">${esc(serviceLabel(c.service))}</span></td>
+              <td class="nowrap"><strong>${esc(c.name || c.displayName || "—")}</strong></td>
+              <td>${esc(c.type || "—")}</td>
+              <td>${esc(c.descriptor || "—")}</td>
+              <td>${flags.join(" ")}</td>
+              <td class="nowrap">${esc(c.timezone || "—")}</td>
+              <td class="nowrap">${esc(shortDate(c.createdAt))}</td>
+              <td>${c.externalLink ? `<a href="${esc(c.externalLink)}" target="_blank" rel="noopener">Open</a>` : "—"}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function renderAggregated(a){
+  const agg = a.buffer?.aggregated;
+  const metrics = agg?.metrics || [];
+  if (!metrics.length) return `<div class="empty">Buffer did not return aggregated metrics for this range.</div>`;
+  return `
+    <div class="table-wrap">
+      <table class="t">
+        <thead><tr><th>Metric</th><th>Type</th><th>Unit</th><th class="num">Value</th><th>Description</th></tr></thead>
+        <tbody>
+          ${metrics.map((m) => `<tr>
+            <td class="nowrap"><strong>${esc(m.name || m.type)}</strong></td>
+            <td><code>${esc(m.type)}</code></td>
+            <td>${esc(m.unit || "—")}</td>
+            <td class="num">${fmtMetric(m)}</td>
+            <td class="muted small">${esc(m.description || "")}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function renderChannelMetrics(a){
+  const rows = (a.buffer?.organizations || []).flatMap((o) => (o.channelMetrics || []).map((m) => ({ ...m, organization: o.name })));
+  if (!rows.length) return `<div class="empty">No per-channel metrics available.</div>`;
+  return rows.map((row) => {
+    const metrics = row.metrics || [];
+    return `<details class="sub">
+      <summary>
+        <span class="chip">${esc(serviceLabel(row.service))}</span>
+        <span>${esc(row.channel_name || row.channel_id)}</span>
+        <span class="muted small">${fmt(metrics.length)} metrics</span>
+      </summary>
+      ${row.error ? `<div class="error-box">${esc(row.error)}</div>` : ""}
+      ${metrics.length ? `
+      <div class="table-wrap">
+        <table class="t">
+          <thead><tr><th>Metric</th><th>Type</th><th>Unit</th><th class="num">Value</th><th>Description</th></tr></thead>
+          <tbody>${metrics.map((m) => `<tr>
+            <td class="nowrap"><strong>${esc(m.name || m.type)}</strong></td>
+            <td><code>${esc(m.type)}</code></td>
+            <td>${esc(m.unit || "—")}</td>
+            <td class="num">${fmtMetric(m)}</td>
+            <td class="muted small">${esc(m.description || "")}</td>
+          </tr>`).join("")}</tbody>
+        </table>
+      </div>` : `<div class="empty">No metrics for this channel in the selected range.</div>`}
+    </details>`;
+  }).join("");
+}
+
+function renderPosts(a){
+  const posts = a.buffer?.posts || [];
+  if (!posts.length) return `<div class="empty">No sent Buffer posts in this range.</div>`;
+  const present = new Set();
+  for (const p of posts) for (const m of p.metrics || []) present.add(m.type);
+  const types = [...present].sort((x, y) => {
+    const ix = METRIC_ORDER.indexOf(x), iy = METRIC_ORDER.indexOf(y);
+    return (ix < 0 ? 99 : ix) - (iy < 0 ? 99 : iy) || x.localeCompare(y);
+  });
+  const channelById = Object.fromEntries((a.buffer?.channels || []).map((c) => [c.id, c]));
+  const pageInfo = (a.buffer?.organizations || []).find((o) => o.postsPageInfo)?.postsPageInfo;
+  return `
+    <div class="table-wrap">
+      <table class="t">
+        <thead><tr>
+          <th>Sent</th><th>Channel</th><th>Post</th>
+          ${types.map((t) => `<th class="num" title="${esc(metricLabel(t, posts.flatMap((p) => p.metrics || [])))}">${esc(metricLabel(t, posts.flatMap((p) => p.metrics || [])))}</th>`).join("")}
+          <th>Link</th>
+        </tr></thead>
+        <tbody>
+          ${posts.map((p) => {
+            const ch = channelById[p.channelId];
+            return `<tr>
+              <td class="nowrap">${esc(shortDateTime(p.sentAt || p.createdAt))}</td>
+              <td class="nowrap"><span class="chip">${esc(serviceLabel(p.channelService || ch?.service))}</span> ${esc(ch?.name || "")}</td>
+              <td class="post-text">${esc((p.text || "").slice(0, 180))}${(p.text || "").length > 180 ? "…" : ""}</td>
+              ${types.map((t) => metricCell(postMetric(p, t))).join("")}
+              <td>${p.externalLink ? `<a href="${esc(p.externalLink)}" target="_blank" rel="noopener">Open</a>` : "—"}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
+    ${pageInfo?.hasNextPage ? `<div class="hint" style="margin-top:8px">Showing the latest ${posts.length} sent posts. More posts are available in Buffer.</div>` : ""}`;
+}
+
+function renderGenerated(a){
+  const items = a.local?.latest5 || [];
+  if (!items.length) return `<div class="empty">No generated content for this account yet.</div>`;
+  return items.map((v) => {
+    const summary = `#${v.id} · ${esc(shortDateTime(v.created_at))} · ${esc(v.category_name || "Uncategorized")} · ${esc(v.status)}`;
+    const hook = v.hook ? ` · ${esc(String(v.hook).slice(0, 80))}${String(v.hook).length > 80 ? "…" : ""}` : "";
+    return `<details class="json-item">
+      <summary><span>${summary}${hook}</span></summary>
+      <pre class="json">${esc(JSON.stringify(v, null, 2))}</pre>
+    </details>`;
+  }).join("");
+}
+
+function renderAccount(a){
+  const orgs = a.buffer?.organizations || [];
+  const totalPosts = (a.buffer?.aggregated?.metrics || []).find((x) => x.type === "postCount")?.value;
+  const orgNames = orgs.map((o) => o.name).filter(Boolean).join(", ");
+  const link = a.link ? `<a href="https://${esc(a.link)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">${esc(a.link)}</a>` : "";
+  const accountMeta = a.buffer?.account;
+  const status = a.ok
+    ? `<span class="pill ok">Buffer connected</span>`
+    : `<span class="pill bad">Buffer error</span>`;
+  return `<details class="account" open>
+    <summary>
+      <div class="avatar">${initials(a.account)}</div>
+      <div class="acc-title">
+        <h2>${esc(a.account)}</h2>
+        <p>${link}${link && orgNames ? " · " : ""}${esc(orgNames)}</p>
+      </div>
+      <div class="acc-status">${status}<span class="chip">${fmt(a.buffer?.posts?.length || 0)} posts loaded</span></div>
+    </summary>
+    <div class="acc-body">
+      ${a.error ? `<div class="error-box">${esc(a.error)}</div>` : ""}
+      <div class="mini-kpis">
+        ${(a.buffer?.aggregated?.metrics || []).map((m) => `<div class="mini"><div class="lbl">${esc(m.type === "postCount" ? "Posts" : (m.name || m.type))}</div><div class="val">${fmtMetric(m)}</div></div>`).join("")}
+        <div class="mini"><div class="lbl">Generated local</div><div class="val">${fmt(a.local?.stats?.generated || 0)}</div></div>
+      </div>
+
+      ${accountMeta ? `<div class="meta-grid">
+        <div class="meta-item"><div class="k">Buffer account</div><div class="v">${esc(accountMeta.name || "—")}</div></div>
+        <div class="meta-item"><div class="k">Email</div><div class="v">${esc(accountMeta.email || "—")}</div></div>
+        <div class="meta-item"><div class="k">Timezone</div><div class="v">${esc(accountMeta.timezone || "—")}</div></div>
+        <div class="meta-item"><div class="k">Account created</div><div class="v">${esc(shortDate(accountMeta.createdAt))}</div></div>
+        <div class="meta-item"><div class="k">Organization</div><div class="v">${esc(orgNames || "—")}</div></div>
+      </div>` : ""}
+
+      <div class="block">
+        <div class="block-head"><h3>Channels</h3><span class="hint">Everything Buffer returns for each connected channel</span></div>
+        ${renderChannels(a)}
+      </div>
+
+      <div class="block">
+        <div class="block-head"><h3>Aggregated Buffer metrics</h3><span class="hint">${esc(String(state.days))}-day range · updated ${esc(shortDateTime(a.buffer?.aggregated?.metricsUpdatedAt))}</span></div>
+        ${renderAggregated(a)}
+      </div>
+
+      <div class="block">
+        <div class="block-head"><h3>Per-channel metrics</h3><span class="hint">Aggregated separately for every channel</span></div>
+        ${renderChannelMetrics(a)}
+      </div>
+
+      <div class="block">
+        <div class="block-head"><h3>Latest Buffer posts</h3><span class="hint">Latest ${fmt(a.buffer?.posts?.length || 0)}${totalPosts ? ` of ${fmt(totalPosts)}` : ""} sent posts with every metric Buffer exposes</span></div>
+        ${renderPosts(a)}
+      </div>
+
+      <div class="block">
+        <div class="block-head"><h3>Generated content — latest 5</h3><span class="hint">Stored in our SQLite DB at generation time, shown as JSON</span></div>
+        ${renderGenerated(a)}
+        <div class="json-actions">
+          <button class="btn" onclick="downloadAccount(${a.account_id})">Download this account JSON</button>
+        </div>
+      </div>
+    </div>
+  </details>`;
+}
+
+function render(){
+  const d = state.data;
+  document.getElementById("state").style.display = "none";
+  if (!d) return;
+  renderMeta();
+  renderKpis();
+  document.getElementById("accounts").innerHTML = d.accounts.map(renderAccount).join("");
+  document.getElementById("downloadAllBtn").disabled = false;
+}
+
+function setRange(days){
+  state.days = days;
+  document.querySelectorAll("#rangePicker button").forEach((b) => b.classList.toggle("on", Number(b.dataset.days) === days));
+  load();
+}
+
+async function load(refresh){
+  if (state.loading) return;
+  state.loading = true;
+  const stateEl = document.getElementById("state");
+  stateEl.style.display = "flex";
+  stateEl.innerHTML = `<span class="spinner"></span><span>Fetching every Buffer account…</span>`;
+  document.getElementById("refreshBtn").disabled = true;
+  try {
+    const res = await fetch(`/api/analytics/full?days=${state.days}${refresh ? "&refresh=1" : ""}`, { headers: { Accept: "application/json" } });
+    if (res.status === 401) {
+      stateEl.innerHTML = `<span>Session expired. Reload the page to sign in again.</span>`;
+      return;
+    }
+    if (!res.ok) throw new Error(`Request failed (${res.status})`);
+    state.data = await res.json();
+    render();
+  } catch (err) {
+    stateEl.style.display = "flex";
+    stateEl.innerHTML = `<span>Could not load analytics: ${esc(err.message)}</span>`;
+  } finally {
+    state.loading = false;
+    document.getElementById("refreshBtn").disabled = false;
+  }
+}
+
+function downloadJson(filename, data){
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function downloadAll(){
+  if (!state.data) return;
+  downloadJson(`1section-analytics-${state.days}d-${new Date().toISOString().slice(0,10)}.json`, state.data);
+}
+function downloadAccount(id){
+  const a = state.data?.accounts?.find((x) => x.account_id === id);
+  if (!a) return;
+  const safe = String(a.account || "account").replace(/[^a-zA-Z0-9._-]/g, "-");
+  downloadJson(`1section-${safe}-${state.days}d-${new Date().toISOString().slice(0,10)}.json`, a);
+}
+
+load();
+</script>
+</body>
+</html>
