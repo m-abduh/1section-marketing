@@ -13,7 +13,7 @@ import { store } from "../db.mjs";
 const BASE = "https://api.buffer.com";
 const TTL_MS = 5 * 60 * 1000;
 const META_TTL_MS = 60 * 60 * 1000;
-const POSTS_PER_ACCOUNT = 50;
+const POSTS_PER_ACCOUNT = 5;
 
 const snapshotCache = new Map();
 const metaCache = new Map();

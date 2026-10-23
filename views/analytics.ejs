@@ -75,6 +75,38 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
 .mini{background:var(--panel-2);border:1px solid #efeee8;border-radius:11px;padding:10px 12px}
 .mini .lbl{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700}
 .mini .val{font-size:17px;font-weight:750;letter-spacing:-.02em;margin-top:4px;font-variant-numeric:tabular-nums}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:15px 18px 0}
+.panel-head h3{font-size:13px;font-weight:750;letter-spacing:-.01em}
+.panel-head .hint{font-size:11.5px;color:var(--faint)}
+.panel-body{padding:14px 18px 18px}
+.chart{display:flex;flex-direction:column;gap:9px}
+.chart-row{display:grid;grid-template-columns:150px minmax(0,1fr) 84px;align-items:center;gap:10px;font-size:12px}
+.chart-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--ink-2)}
+.chart-track{height:12px;background:#f0efe9;border-radius:99px;overflow:hidden}
+.chart-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#5b8bff,#2f6bff);min-width:2px;transition:width .25s}
+.chart-value{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.chart-row:hover .chart-fill{filter:brightness(1.06)}
+.channel-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.channel-card{border:1px solid #efeee8;border-radius:12px;background:var(--panel-2);padding:12px 13px}
+.channel-card-head{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:9px}
+.channel-card-head .nm{font-size:12px;font-weight:700;letter-spacing:-.01em}
+.channel-card-head .ct{margin-left:auto;font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.post-list{display:flex;flex-direction:column;gap:10px}
+.post-card{border:1px solid #efeee8;border-radius:12px;background:var(--panel-2);padding:12px 13px}
+.post-card-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.post-card-head .when{font-size:11px;color:var(--faint)}
+.post-card-head .open{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--accent);text-decoration:none;white-space:nowrap}
+.post-card-head .open:hover{text-decoration:underline}
+.post-card-text{font-size:12.5px;line-height:1.55;color:var(--ink-2);white-space:pre-wrap;margin-bottom:10px;word-break:break-word}
+.post-card .metric-grid{grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:6px}
+.metric-cell{background:#fff;border:1px solid #f0eee8;border-radius:9px;padding:8px 9px;min-width:0}
+.metric-cell .k{font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.metric-cell .v{font-size:15px;font-weight:750;letter-spacing:-.02em;margin-top:3px;font-variant-numeric:tabular-nums}
+.metric-cell .t{font-size:9px;color:var(--faint);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+table.t tbody tr:nth-child(even){background:#fcfcfa}
+table.t tbody tr:hover{background:#f8f8f4}
 .block{border-top:1px solid #f1efe9;padding-top:16px;margin-top:16px}
 .block-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
 .block-head h3{font-size:13px;font-weight:750;letter-spacing:-.01em}
@@ -94,9 +126,6 @@ table.t .nowrap{white-space:nowrap}
 .dot.bad{background:var(--bad);box-shadow:0 0 0 3px var(--bad-soft)}
 .muted{color:var(--muted)}
 .small{font-size:11px}
-.post-text{max-width:420px;min-width:230px;color:var(--ink-2);line-height:1.45}
-.post-text a{color:var(--accent);text-decoration:none}
-.post-text a:hover{text-decoration:underline}
 details.sub{border:1px solid #f0eee8;border-radius:11px;padding:10px 12px;margin-bottom:8px;background:var(--panel-2)}
 details.sub>summary{list-style:none;cursor:pointer;font-size:12px;font-weight:650;display:flex;align-items:center;gap:8px}
 details.sub>summary::-webkit-details-marker{display:none}
@@ -126,7 +155,7 @@ pre.json{margin:0;padding:12px 14px;border-top:1px solid #f0eee8;background:#0f1
   .side-nav{flex-direction:row;flex-wrap:wrap;padding-bottom:10px}
   .main{padding:20px 16px 48px}
   .topbar{align-items:flex-start}
-  .post-text{max-width:300px;min-width:200px}
+  .chart-row{grid-template-columns:110px minmax(0,1fr) 72px}
 }
 </style>
 </head>
@@ -149,7 +178,7 @@ pre.json{margin:0;padding:12px 14px;border-top:1px solid #f0eee8;background:#0f1
       <ul>
         <li>All Buffer metrics for every account</li>
         <li>Every channel and organization Buffer returns</li>
-        <li>Latest 50 sent posts per account, with all post metrics</li>
+        <li>Latest 5 sent posts per account, with all post metrics</li>
         <li>Latest 5 generated posts per account from our SQLite DB, as JSON</li>
       </ul>
     </div>
@@ -168,6 +197,7 @@ pre.json{margin:0;padding:12px 14px;border-top:1px solid #f0eee8;background:#0f1
           <button data-days="90" onclick="setRange(90)">90d</button>
         </div>
         <button class="btn" id="refreshBtn" onclick="load(true)">Refresh</button>
+        <button class="btn" id="auditBtn" onclick="downloadAudit()" disabled>Download audit (.md)</button>
         <button class="btn primary" id="downloadAllBtn" onclick="downloadAll()" disabled>Download all JSON</button>
       </div>
     </header>
@@ -178,13 +208,33 @@ pre.json{margin:0;padding:12px 14px;border-top:1px solid #f0eee8;background:#0f1
     </div>
 
     <div id="kpis" class="kpis"></div>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h3>Account comparison</h3>
+          <div class="hint" id="chartHint">Buffer aggregated value for the selected range</div>
+        </div>
+        <div class="segmented" id="chartPicker">
+          <button data-metric="views" class="on" onclick="setChartMetric('views')">Views</button>
+          <button data-metric="reactions" onclick="setChartMetric('reactions')">Reactions</button>
+          <button data-metric="comments" onclick="setChartMetric('comments')">Comments</button>
+          <button data-metric="postCount" onclick="setChartMetric('postCount')">Posts</button>
+          <button data-metric="engagementRate" onclick="setChartMetric('engagementRate')">Eng. Rate</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div id="accountChart" class="chart"></div>
+      </div>
+    </section>
+
     <div id="accounts"></div>
     <div id="state" class="loading"><span class="spinner"></span><span>Fetching every Buffer account…</span></div>
   </main>
 </div>
 
 <script>
-const state = { days: 30, data: null, loading: false };
+const state = { days: 30, data: null, loading: false, chartMetric: "views" };
 
 const METRIC_ORDER = ["postCount","views","reach","impressions","reactions","comments","shares","saves","clicks","follows","engagementRate","quotes","reposts","likes","viewers","averageTimeWatched","totalTimeWatched","freeSubscriptions","paidSubscriptions"];
 
@@ -227,14 +277,38 @@ function initials(name){
 function serviceLabel(service){
   return String(service || "").replace(/^./, (c) => c.toUpperCase());
 }
-function metricCell(m){
-  return `<td class="num">${m ? fmtMetric(m) : "—"}</td>`;
-}
 function postMetric(post, type){
   return (post.metrics || []).find((m) => m.type === type);
 }
 function kpi(label, value, foot){
   return `<div class="kpi"><div class="lbl">${esc(label)}</div><div class="val">${value}</div><div class="foot">${esc(foot || "")}</div></div>`;
+}
+function accountMetric(a, type){
+  return (a.buffer?.aggregated?.metrics || []).find((m) => m.type === type) || null;
+}
+function renderChart(){
+  const d = state.data;
+  if (!d) return;
+  const type = state.chartMetric;
+  const sample = d.accounts.map((a) => accountMetric(a, type)).find(Boolean);
+  const unit = sample?.unit;
+  const label = sample?.name || type;
+  const rows = d.accounts
+    .map((a) => ({ name: a.account, value: Number(accountMetric(a, type)?.value) || 0 }))
+    .sort((a, b) => b.value - a.value);
+  const max = Math.max(...rows.map((r) => r.value), 1);
+  document.getElementById("chartHint").textContent = `${label} · ${d.range.days}-day range · all ${d.accounts.length} accounts`;
+  document.getElementById("accountChart").innerHTML = rows.map((r) => `
+    <div class="chart-row" title="${esc(r.name)} — ${esc(fmtMetric({ value: r.value, unit }))}">
+      <div class="chart-label">${esc(r.name)}</div>
+      <div class="chart-track"><div class="chart-fill" style="width:${r.value ? Math.max(1.5, (r.value / max) * 100) : 0}%"></div></div>
+      <div class="chart-value">${esc(fmtMetric({ value: r.value, unit }))}</div>
+    </div>`).join("");
+}
+function setChartMetric(type){
+  state.chartMetric = type;
+  document.querySelectorAll("#chartPicker button").forEach((b) => b.classList.toggle("on", b.dataset.metric === type));
+  renderChart();
 }
 
 function renderKpis(){
@@ -254,7 +328,7 @@ function renderKpis(){
       fmtMetric(m),
       m.type === "postCount" ? `${d.range.days}-day range` : (m.type === "engagementRate" ? "Reactions ÷ views" : "Buffer aggregated")
     )),
-    kpi("Generated locally", fmt(local.generated), `${fmt(local.success)} successful`),
+    kpi("Generated locally", fmt(local.generated), `${fmt(local.success)} success · ${fmt(local.pending)} pending`),
     kpi("Local success rate", `${fmt(local.successRate)}%`, `${fmt(local.failed)} failed`),
   ];
 
@@ -271,7 +345,7 @@ function renderMeta(){
     <span>·</span>
     <span>Updated ${esc(when)}</span>
     <span>·</span>
-    <span>${fmt(d.summary.posts)} Buffer posts loaded</span>
+    <span>${fmt(d.summary.posts)} latest Buffer posts loaded</span>
   `;
 }
 
@@ -331,64 +405,57 @@ function renderAggregated(a){
 function renderChannelMetrics(a){
   const rows = (a.buffer?.organizations || []).flatMap((o) => (o.channelMetrics || []).map((m) => ({ ...m, organization: o.name })));
   if (!rows.length) return `<div class="empty">No per-channel metrics available.</div>`;
-  return rows.map((row) => {
+  return `<div class="channel-grid">${rows.map((row) => {
     const metrics = row.metrics || [];
-    return `<details class="sub">
-      <summary>
+    return `<div class="channel-card">
+      <div class="channel-card-head">
         <span class="chip">${esc(serviceLabel(row.service))}</span>
-        <span>${esc(row.channel_name || row.channel_id)}</span>
-        <span class="muted small">${fmt(metrics.length)} metrics</span>
-      </summary>
+        <span class="nm">${esc(row.channel_name || row.channel_id)}</span>
+        <span class="ct">${fmt(metrics.length)} values</span>
+      </div>
       ${row.error ? `<div class="error-box">${esc(row.error)}</div>` : ""}
       ${metrics.length ? `
-      <div class="table-wrap">
-        <table class="t">
-          <thead><tr><th>Metric</th><th>Type</th><th>Unit</th><th class="num">Value</th><th>Description</th></tr></thead>
-          <tbody>${metrics.map((m) => `<tr>
-            <td class="nowrap"><strong>${esc(m.name || m.type)}</strong></td>
-            <td><code>${esc(m.type)}</code></td>
-            <td>${esc(m.unit || "—")}</td>
-            <td class="num">${fmtMetric(m)}</td>
-            <td class="muted small">${esc(m.description || "")}</td>
-          </tr>`).join("")}</tbody>
-        </table>
+      <div class="metric-grid">
+        ${metrics.map((m) => `<div class="metric-cell" title="${esc(m.description || m.name || m.type)}">
+          <div class="k">${esc(m.name || m.type)}</div>
+          <div class="v">${fmtMetric(m)}</div>
+          <div class="t">${esc(m.type)}${m.unit === "percentage" ? " · %" : ""}</div>
+        </div>`).join("")}
       </div>` : `<div class="empty">No metrics for this channel in the selected range.</div>`}
-    </details>`;
-  }).join("");
+    </div>`;
+  }).join("")}</div>`;
 }
 
 function renderPosts(a){
   const posts = a.buffer?.posts || [];
   if (!posts.length) return `<div class="empty">No sent Buffer posts in this range.</div>`;
-  const present = new Set();
-  for (const p of posts) for (const m of p.metrics || []) present.add(m.type);
-  const types = [...present].sort((x, y) => {
-    const ix = METRIC_ORDER.indexOf(x), iy = METRIC_ORDER.indexOf(y);
-    return (ix < 0 ? 99 : ix) - (iy < 0 ? 99 : iy) || x.localeCompare(y);
-  });
   const channelById = Object.fromEntries((a.buffer?.channels || []).map((c) => [c.id, c]));
   const pageInfo = (a.buffer?.organizations || []).find((o) => o.postsPageInfo)?.postsPageInfo;
   return `
-    <div class="table-wrap">
-      <table class="t">
-        <thead><tr>
-          <th>Sent</th><th>Channel</th><th>Post</th>
-          ${types.map((t) => `<th class="num" title="${esc(metricLabel(t, posts.flatMap((p) => p.metrics || [])))}">${esc(metricLabel(t, posts.flatMap((p) => p.metrics || [])))}</th>`).join("")}
-          <th>Link</th>
-        </tr></thead>
-        <tbody>
-          ${posts.map((p) => {
-            const ch = channelById[p.channelId];
-            return `<tr>
-              <td class="nowrap">${esc(shortDateTime(p.sentAt || p.createdAt))}</td>
-              <td class="nowrap"><span class="chip">${esc(serviceLabel(p.channelService || ch?.service))}</span> ${esc(ch?.name || "")}</td>
-              <td class="post-text">${esc((p.text || "").slice(0, 180))}${(p.text || "").length > 180 ? "…" : ""}</td>
-              ${types.map((t) => metricCell(postMetric(p, t))).join("")}
-              <td>${p.externalLink ? `<a href="${esc(p.externalLink)}" target="_blank" rel="noopener">Open</a>` : "—"}</td>
-            </tr>`;
-          }).join("")}
-        </tbody>
-      </table>
+    <div class="post-list">
+      ${posts.map((p) => {
+        const ch = channelById[p.channelId];
+        const metrics = [...(p.metrics || [])].sort((x, y) => {
+          const ix = METRIC_ORDER.indexOf(x.type), iy = METRIC_ORDER.indexOf(y.type);
+          return (ix < 0 ? 99 : ix) - (iy < 0 ? 99 : iy) || String(x.type).localeCompare(String(y.type));
+        });
+        return `<article class="post-card">
+          <div class="post-card-head">
+            <span class="chip">${esc(serviceLabel(p.channelService || ch?.service))}</span>
+            <strong>${esc(ch?.name || "Post")}</strong>
+            <span class="when">${esc(shortDateTime(p.sentAt || p.createdAt))}</span>
+            ${p.externalLink ? `<a class="open" href="${esc(p.externalLink)}" target="_blank" rel="noopener">Open post ↗</a>` : ""}
+          </div>
+          <div class="post-card-text">${esc(p.text || "No post text")}</div>
+          ${metrics.length ? `<div class="metric-grid">
+            ${metrics.map((m) => `<div class="metric-cell" title="${esc(m.description || m.name || m.type)}">
+              <div class="k">${esc(m.name || m.type)}</div>
+              <div class="v">${fmtMetric(m)}</div>
+              <div class="t">${esc(m.type)}${m.unit === "percentage" ? " · %" : ""}</div>
+            </div>`).join("")}
+          </div>` : `<div class="empty">No metrics reported for this post yet.</div>`}
+        </article>`;
+      }).join("")}
     </div>
     ${pageInfo?.hasNextPage ? `<div class="hint" style="margin-top:8px">Showing the latest ${posts.length} sent posts. More posts are available in Buffer.</div>` : ""}`;
 }
@@ -429,6 +496,9 @@ function renderAccount(a){
       <div class="mini-kpis">
         ${(a.buffer?.aggregated?.metrics || []).map((m) => `<div class="mini"><div class="lbl">${esc(m.type === "postCount" ? "Posts" : (m.name || m.type))}</div><div class="val">${fmtMetric(m)}</div></div>`).join("")}
         <div class="mini"><div class="lbl">Generated local</div><div class="val">${fmt(a.local?.stats?.generated || 0)}</div></div>
+        <div class="mini"><div class="lbl">Local success</div><div class="val">${fmt(a.local?.stats?.success || 0)}</div></div>
+        <div class="mini"><div class="lbl">Local failed</div><div class="val">${fmt(a.local?.stats?.failed || 0)}</div></div>
+        <div class="mini"><div class="lbl">Local pending</div><div class="val">${fmt(a.local?.stats?.pending || 0)}</div></div>
       </div>
 
       ${accountMeta ? `<div class="meta-grid">
@@ -463,6 +533,7 @@ function renderAccount(a){
         <div class="block-head"><h3>Generated content — latest 5</h3><span class="hint">Stored in our SQLite DB at generation time, shown as JSON</span></div>
         ${renderGenerated(a)}
         <div class="json-actions">
+          <button class="btn primary" onclick="downloadAccountAudit(${a.account_id})">Download account audit (.md)</button>
           <button class="btn" onclick="downloadAccount(${a.account_id})">Download this account JSON</button>
         </div>
       </div>
@@ -476,7 +547,9 @@ function render(){
   if (!d) return;
   renderMeta();
   renderKpis();
+  renderChart();
   document.getElementById("accounts").innerHTML = d.accounts.map(renderAccount).join("");
+  document.getElementById("auditBtn").disabled = false;
   document.getElementById("downloadAllBtn").disabled = false;
 }
 
@@ -511,6 +584,206 @@ async function load(refresh){
   }
 }
 
+function mdCell(value){
+  const text = String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\|/g, "\\|")
+    .replace(/\r?\n/g, "<br>")
+    .replace(/[ \t]+/g, " ")
+    .trim();
+  return text || "—";
+}
+function channelStatusText(c){
+  const flags = [];
+  if (c.isDisconnected) flags.push("Disconnected");
+  if (c.isLocked) flags.push("Locked");
+  if (c.isQueuePaused) flags.push("Queue paused");
+  return flags.length ? flags.join(", ") : "Active";
+}
+function postMetricTypes(posts){
+  const present = new Set();
+  for (const p of posts) for (const m of p.metrics || []) present.add(m.type);
+  return [...present].sort((x, y) => {
+    const ix = METRIC_ORDER.indexOf(x), iy = METRIC_ORDER.indexOf(y);
+    return (ix < 0 ? 99 : ix) - (iy < 0 ? 99 : iy) || x.localeCompare(y);
+  });
+}
+function accountMarkdown(a){
+  const d = state.data;
+  const metrics = a.buffer?.aggregated?.metrics || [];
+  const channels = a.buffer?.channels || [];
+  const posts = (a.buffer?.posts || []).slice(0, 5);
+  const types = postMetricTypes(posts);
+  const allPostMetrics = posts.flatMap((p) => p.metrics || []);
+  const orgs = a.buffer?.organizations || [];
+  const orgNames = orgs.map((o) => o.name).filter(Boolean).join(", ");
+  const accountMeta = a.buffer?.account;
+  const local = a.local?.stats || {};
+  const totalPosts = metrics.find((m) => m.type === "postCount")?.value;
+  const lines = [];
+
+  lines.push(`## ${mdCell(a.account || `Account ${a.account_id}`)}`);
+  lines.push("");
+  lines.push(`- **Account:** ${mdCell(a.account)}`);
+  if (a.link) lines.push(`- **Link:** https://${a.link}`);
+  if (accountMeta?.name) lines.push(`- **Buffer account:** ${mdCell(accountMeta.name)}`);
+  if (accountMeta?.email) lines.push(`- **Email:** ${mdCell(accountMeta.email)}`);
+  if (accountMeta?.timezone) lines.push(`- **Timezone:** ${mdCell(accountMeta.timezone)}`);
+  if (orgNames) lines.push(`- **Organization:** ${mdCell(orgNames)}`);
+  lines.push(`- **Buffer status:** ${a.ok ? "Connected" : "Error"}`);
+  if (a.error) lines.push(`- **Buffer error:** ${mdCell(a.error)}`);
+  lines.push(`- **Range:** ${d.range.days} days (${shortDate(d.range.start)} – ${shortDate(d.range.end)})`);
+  lines.push(`- **Generated at:** ${shortDateTime(d.generatedAt)}`);
+  lines.push("");
+
+  lines.push("### Key values");
+  lines.push("");
+  lines.push("| Metric | Value |");
+  lines.push("| --- | ---: |");
+  for (const m of metrics) lines.push(`| ${mdCell(m.name || m.type)} | ${fmtMetric(m)} |`);
+  lines.push(`| Generated local | ${local.generated ?? 0} |`);
+  lines.push(`| Local success | ${local.success ?? 0} |`);
+  lines.push(`| Local failed | ${local.failed ?? 0} |`);
+  lines.push(`| Local pending | ${local.pending ?? 0} |`);
+  if (local.lastAt) lines.push(`| Last generated | ${mdCell(shortDateTime(local.lastAt))} |`);
+  lines.push("");
+
+  lines.push("### Channels");
+  lines.push("");
+  if (channels.length) {
+    lines.push("| Service | Channel | Type | Descriptor | Status | Timezone | Created | Link |");
+    lines.push("| --- | --- | --- | --- | --- | --- | --- | --- |");
+    for (const c of channels) {
+      lines.push(`| ${mdCell(serviceLabel(c.service))} | ${mdCell(c.name || c.displayName)} | ${mdCell(c.type)} | ${mdCell(c.descriptor)} | ${mdCell(channelStatusText(c))} | ${mdCell(c.timezone)} | ${mdCell(shortDate(c.createdAt))} | ${c.externalLink ? `[Open](${c.externalLink})` : "—"} |`);
+    }
+  } else {
+    lines.push("No channels returned by Buffer.");
+  }
+  lines.push("");
+
+  lines.push("### Aggregated Buffer metrics");
+  lines.push("");
+  if (metrics.length) {
+    lines.push("| Metric | Type | Unit | Value | Description |");
+    lines.push("| --- | --- | --- | ---: | --- |");
+    for (const m of metrics) {
+      lines.push(`| ${mdCell(m.name || m.type)} | ${mdCell(m.type)} | ${mdCell(m.unit)} | ${fmtMetric(m)} | ${mdCell(m.description)} |`);
+    }
+  } else {
+    lines.push("Buffer did not return aggregated metrics for this range.");
+  }
+  lines.push("");
+
+  lines.push("### Per-channel metrics");
+  lines.push("");
+  const channelRows = orgs.flatMap((o) => o.channelMetrics || []);
+  if (channelRows.length) {
+    for (const row of channelRows) {
+      const values = row.metrics || [];
+      lines.push(`#### ${mdCell(serviceLabel(row.service))} — ${mdCell(row.channel_name || row.channel_id)} (${values.length} values)`);
+      lines.push("");
+      if (row.error) {
+        lines.push(`> **Error:** ${mdCell(row.error)}`);
+        lines.push("");
+      }
+      if (values.length) {
+        lines.push("| Metric | Type | Unit | Value | Description |");
+        lines.push("| --- | --- | --- | ---: | --- |");
+        for (const m of values) lines.push(`| ${mdCell(m.name || m.type)} | ${mdCell(m.type)} | ${mdCell(m.unit)} | ${fmtMetric(m)} | ${mdCell(m.description)} |`);
+      } else {
+        lines.push("No metrics for this channel in the selected range.");
+      }
+      lines.push("");
+    }
+  } else {
+    lines.push("No per-channel metrics available.");
+    lines.push("");
+  }
+
+  lines.push(`### Latest Buffer posts (${posts.length}${totalPosts ? ` of ${fmt(totalPosts)}` : ""})`);
+  lines.push("");
+  if (posts.length) {
+    lines.push(`| Sent | Channel | Post | ${types.map((t) => mdCell(metricLabel(t, allPostMetrics))).join(" | ")} | Link |`);
+    lines.push(`| --- | --- | --- | ${types.map(() => "---:").join(" | ")} | --- |`);
+    for (const p of posts) {
+      const ch = channels.find((c) => c.id === p.channelId);
+      const cells = [
+        mdCell(shortDateTime(p.sentAt || p.createdAt)),
+        mdCell(`${serviceLabel(p.channelService || ch?.service)} ${ch?.name || ""}`),
+        mdCell(p.text || ""),
+        ...types.map((t) => fmtMetric(postMetric(p, t))),
+        p.externalLink ? `[Open](${p.externalLink})` : "—",
+      ];
+      lines.push(`| ${cells.join(" | ")} |`);
+    }
+  } else {
+    lines.push("No sent Buffer posts in this range.");
+  }
+  lines.push("");
+
+  lines.push("### Generated content — latest 5 (JSON)");
+  lines.push("");
+  lines.push("````json");
+  lines.push(JSON.stringify(a.local?.latest5 || [], null, 2));
+  lines.push("````");
+  lines.push("");
+
+  return lines.join("\n");
+}
+function auditMarkdown(){
+  const d = state.data;
+  if (!d) return "";
+  const local = d.totals.local;
+  const lines = [];
+  lines.push("# 1section Analytics Audit");
+  lines.push("");
+  lines.push(`- **Generated at:** ${shortDateTime(d.generatedAt)}`);
+  lines.push(`- **Range:** ${d.range.days} days (${shortDate(d.range.start)} – ${shortDate(d.range.end)})`);
+  lines.push(`- **Accounts:** ${d.summary.connected}/${d.summary.accounts} connected`);
+  lines.push(`- **Organizations:** ${d.summary.organizations}`);
+  lines.push(`- **Channels:** ${d.summary.channels}`);
+  for (const m of d.totals.buffer || []) lines.push(`- **${mdCell(m.name || m.type)}:** ${fmtMetric(m)}`);
+  lines.push(`- **Generated local:** ${local.generated} (${local.success} success · ${local.failed} failed · ${local.pending} pending)`);
+  lines.push("");
+  lines.push("## Account overview");
+  lines.push("");
+  lines.push("| Account | Posts | Views | Reactions | Comments | Eng. Rate | Generated local |");
+  lines.push("| --- | ---: | ---: | ---: | ---: | ---: | ---: |");
+  for (const a of d.accounts) {
+    const value = (type) => fmtMetric(accountMetric(a, type));
+    lines.push(`| ${mdCell(a.account)} | ${value("postCount")} | ${value("views")} | ${value("reactions")} | ${value("comments")} | ${value("engagementRate")} | ${a.local?.stats?.generated ?? 0} |`);
+  }
+  lines.push("");
+  for (const a of d.accounts) {
+    lines.push("---");
+    lines.push("");
+    lines.push(accountMarkdown(a));
+  }
+  return lines.join("\n");
+}
+function downloadText(filename, text, type = "text/markdown;charset=utf-8"){
+  const blob = new Blob([text], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function downloadAudit(){
+  if (!state.data) return;
+  downloadText(`1section-analytics-audit-${state.days}d-${new Date().toISOString().slice(0, 10)}.md`, auditMarkdown());
+}
+function downloadAccountAudit(id){
+  const a = state.data?.accounts?.find((x) => x.account_id === id);
+  if (!a) return;
+  const safe = String(a.account || "account").replace(/[^a-zA-Z0-9._-]/g, "-");
+  downloadText(`1section-${safe}-audit-${state.days}d-${new Date().toISOString().slice(0, 10)}.md`, accountMarkdown(a));
+}
 function downloadJson(filename, data){
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
