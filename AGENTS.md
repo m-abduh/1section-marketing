@@ -22,10 +22,10 @@ Each scheduled run posts **one** (account, category) pair, advancing like a flat
 - Posts are **deduped** per account (same trimmed content already posted = skipped).
 
 ## Data model (`db.mjs` → SQLite)
-- `settings` — key/value: `rotation`, `videos_per_day`, `tz`, `window_start`, `window_end`, etc.
+- `settings` — key/value: `rotation`, `videos_per_day`, `tz`, `window_start`, `window_end`, etc. `ai_base_prompt_version` and `account_prompt_version` are one-time prompt-revamp markers.
 - `accounts` — name + `buffer_token` + position (rotation order).
-- `categories` — global list: name + `default_prompt`.
-- `account_categories` — per-account instance of a category: `prompt` (per-account override, falls back to category `default_prompt`), position. THIS is what drives what content each account posts.
+- `categories` — global list: name + `default_prompt`. The current set is the same 12 categories for every niche: Common Mistake, Myth Busted, Hard Truth, Quick Fix, Warning Signs, Say This, Reframe, Simple Rule, Ask Yourself, Hidden Cost, Mini Scenario, Stop Doing This. `seed.mjs` is canonical; positions are re-seeded in that order.
+- `account_categories` — per-account instance of a category: `prompt` (per-account override, falls back to category `default_prompt`), position. THIS is what drives what content each account posts. A one-time `account_prompt_version` migration clears the old niche-specific overrides so the shared category prompts apply.
 - `videos` — one row per generated post: account/category, `hook`, `content`, `caption`, `content_json`, `video_path`, `status` (pending/success/failed), `attempts`, `last_error`. Persisted so captions/content survive failures.
 
 ## Pipeline flow (`pipeline.js`)
@@ -39,7 +39,7 @@ Each scheduled run posts **one** (account, category) pair, advancing like a flat
 - `renderPost({hook, content, category, account, account_link, conclusion}, outputPath)` in renderer writes the filled `_render.html` then spawns hyperframes. `videogen.generateVideo` caps concurrency via `RENDER_CONCURRENCY` (default 1); output file is `<account>-<epoch>.mp4`.
 
 ## OpenRouter content contract
-`services/openrouter.js` `generatePost({accountName, categoryName, prompt})` → AI returns strict JSON `{hook, content, caption, conclusion}`. `content` is multi-line Markdown: short (under ~45 words) and shape-varied per post (sections `###`/`####`, one-level blockquotes, compact tables, lists/checklists, separators, a code block only for formulas). `conclusion` is one plain-text takeaway sentence (max ~18 words) printed on the CTA card. An explicit `OUTPUT_CONTRACT` is appended to every request (so the field is generated even when the DB holds an older base-prompt revision). The per-account-category `prompt` (editable in the dashboard) customizes the generator. Caption auto-appends `#1section`.
+`services/openrouter.js` `generatePost({accountName, categoryName, prompt})` → AI returns strict JSON `{hook, content, caption, conclusion}`. It injects the account's niche and its approved topic bank from `services/niche-topics.mjs` (20 topics per niche), then applies the category prompt from `seed.mjs` and the base prompt. Every post must use exactly one listed topic and stay in native English. `content` is multi-line Markdown: short (under ~45 words) and shape-varied per post (sections `###`/`####`, one-level blockquotes, compact tables, lists/checklists, separators, a code block only for formulas). `conclusion` is one plain-text takeaway sentence (max ~18 words) printed on the CTA card. An explicit `OUTPUT_CONTRACT` is appended to every request (so the field is generated even when the DB holds an older base-prompt revision). The per-account-category `prompt` (editable in the dashboard) customizes the generator; after the revamp migration these overrides are empty and the shared defaults apply. Caption auto-appends `#1section`.
 
 Supported Markdown (CSS in `builder/unified.html`): h1–h6, bold/italic/strike/underline/`<mark>`/`<small>`/`<kbd>`/sub/sup, inline code (dark pill, white text), code blocks, paragraphs + `<br>`, `---`, one-level blockquotes (nested renders muted), nested `ul`/`ol`/task lists, tables with `:---`/`:---:`/`---:` alignment, links, images. Not supported by design: Mermaid, LaTeX math, raw HTML beyond those tags.
 

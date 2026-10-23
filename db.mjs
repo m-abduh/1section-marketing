@@ -7,6 +7,11 @@ import { DEFAULT_BASE_PROMPT } from "./services/base-prompt.mjs";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_PATH = process.env.DB_PATH || join(__dirname, "db.sqlite");
 
+// Bump these when the prompt revamp should replace saved prompt text once.
+// They are data migrations, not scheduling/rotation logic.
+const BASE_PROMPT_VERSION = "2026-10-content-revamp-v1";
+const ACCOUNT_PROMPT_VERSION = "2026-10-content-revamp-v1";
+
 export const db = new Database(DB_PATH);
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
@@ -88,6 +93,14 @@ function setSetting(key, value) {
     "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value"
   ).run(key, String(value));
 }
+
+// One-time base-prompt refresh. The prompt lives in code; a dashboard edit is
+// overwritten only when this content revision has not been applied yet.
+if (getSetting("ai_base_prompt_version", "") !== BASE_PROMPT_VERSION) {
+  setSetting("ai_base_prompt", DEFAULT_BASE_PROMPT);
+  setSetting("ai_base_prompt_version", BASE_PROMPT_VERSION);
+}
+
 function getSettingJSON(key, fallback) {
   try { return JSON.parse(getSetting(key, "null")); }
   catch { return fallback; }
@@ -189,7 +202,27 @@ export const store = {
       }
     });
     tx();
+
+    // Keep the seeded categories in the exact order above, even on old DBs
+    // where some of them already existed at different positions.
+    const setPosition = db.prepare("UPDATE categories SET position=? WHERE id=?");
+    const order = db.transaction(() => {
+      CATEGORY_SEEDS.forEach((s, i) => {
+        const row = db.prepare("SELECT id FROM categories WHERE name=?").get(s.name);
+        if (row) setPosition.run(i, row.id);
+      });
+    });
+    order();
+
     this.syncAllAccountCategories();
+
+    // One-time prompt refresh: the old per-account niche prompts are replaced
+    // by the shared category prompts + the runtime NICHE TOPICS block. Run it
+    // after syncing so every account/category row exists.
+    if (getSetting("account_prompt_version", "") !== ACCOUNT_PROMPT_VERSION) {
+      db.prepare("UPDATE account_categories SET prompt=NULL").run();
+      setSetting("account_prompt_version", ACCOUNT_PROMPT_VERSION);
+    }
   },
 
   // Mirror the global category list onto every account so each account

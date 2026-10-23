@@ -1,5 +1,6 @@
 import { store } from "../db.mjs";
 import { DEFAULT_BASE_PROMPT } from "./base-prompt.mjs";
+import { topicsForAccount } from "./niche-topics.mjs";
 
 export { DEFAULT_BASE_PROMPT };
 
@@ -100,8 +101,18 @@ export async function generatePost({ accountName, categoryName, prompt }) {
     ? prompt.trim()
     : `The topic is up to you — pick something timely and relevant to ${categoryName}.`;
 
+  const { niche, topics } = topicsForAccount(accountName);
+  const topicBlock = topics.length
+    ? `Niche: ${niche}
+NICHE TOPICS (choose exactly ONE; build the whole post around it; do not mix topics or switch niches):
+${topics.map((t) => `- ${t}`).join("\n")}`
+    : `Niche: ${niche}`;
+
   const userPrompt = `Video channel name: ${accountName}
+${topicBlock}
+
 Category: ${categoryName}
+LANGUAGE: Native English (US) only. Never write in Indonesian or translated-sounding English.
 
 SOURCE INSTRUCTIONS (these define the content style, structure, and format — follow them first):
 ${src}

@@ -1,204 +1,187 @@
-// Seed categories: one entry = a financial content format + the prompt that
-// steers the AI to produce that format as GitHub-README-style Markdown.
+// Seed categories: one entry = a content format + the prompt that steers the
+// AI. All 12 categories apply to every niche; the niche-specific topic bank is
+// injected at generation time from services/niche-topics.mjs.
 //
-// The renderer composes the final one-screen slide as:
+// The renderer still composes the final slide as:
 //   # {nn} — {Category}
 //   ---
-//   ## {hook}      <- the headline/hook, written by the AI
-//   {body}         <- the rest, written by the AI (this is what the prompt steers)
+//   ## {hook}
+//   {body}
 //
-// Body rules for EVERY category (baked into each prompt below):
-// - Plain flowing Markdown: **bold**, *italic*, ~~strikethrough~~, "- " lists,
-//   and | tables | where the format calls for them.
-// - NEVER use container blocks: no blockquotes (>) and no \`\`\`text code fences.
-// - NEVER repeat the hook text anywhere in the body — the body must stand on its
-//   own as a separate, non-redundant discussion (no wasted vertical space).
-// - The hook may use inline styling (like **bold**) SPARINGLY on a key phrase,
-//   but never bold the whole hook.
-// - NEVER use emojis or emoticons — only text and numbers; use symbols
-//   (× = ≠ ↓) ONLY when they carry meaning.
-// - Keep lines short enough to fit on one 1080x1350 static frame.
-// - Every claim must be financially/factually correct — no hype.
+// These prompts only steer the AI. Rotation, scheduling, rendering, Buffer
+// posting, and the database schema stay unchanged.
 
-function readmeBody({ structure, example }) {
-  return `Write the CONTENT BODY in plain, flowing Markdown. A headline (the "hook") already sits above as the H2 title; your body is everything after it — pure Markdown that renders beautifully on ONE static slide.
+const COMMON_RULES = `Write in natural, native English (US) only. No translated-sounding phrasing, no mixed languages, no generic AI-speak.
+Choose exactly ONE topic from the NICHE TOPICS list supplied in the prompt. The whole post must stay on that one topic and inside that niche. Never switch niches and never invent an unrelated topic.
+Make the viewer feel instantly seen ("this is so me") without shaming them. Be specific, accurate, and useful. Never invent statistics, quotes, or study results.
+Use standard English number and currency formatting (20%, $1,200, 10 hrs), never localized formats like "20 %".
+The "hook" is the title above the body. The body must add new information and must never repeat the hook.
+Use the markdown shape that fits the category, and vary it from post to post. Keep the body under about 45 words so it fits one static slide.
+Never wrap the body or multiple lines in inline backticks. Use a fenced code block only when the category specifically asks for a formula.`;
 
-Structure to follow:
+function categoryPrompt({ purpose, structure, example }) {
+  return `CATEGORY BEHAVIOR
+${purpose}
+
+STRUCTURE TO FOLLOW
 ${structure}
 
-Exact visual style to emulate (invent fresh content, never copy verbatim):
+ANGLE EXAMPLE (invent fresh content; never copy this line)
 ${example}
 
-Rules: 100% Markdown, plain flowing body. Use only safe inline styling — **bold** (1-2 key words max, never a whole line), *italic*, ~~strikethrough~~, "- " lists, and | tables | when asked. NEVER use container blocks: no blockquotes (>) and no \`\`\`text code fences — write everything as plain paragraphs and lists. NEVER repeat the hook text anywhere in the body; the body must add new information, not echo the title. No emojis, no emoticons, text + numbers only, symbols (× = ≠ ↓) only where meaningful. Every line short enough for one screen. Correct financial theory and accurate numbers.`;
+${COMMON_RULES}`;
 }
+
 export const CATEGORY_SEEDS = [
   {
-    name: "Story",
-    default_prompt: readmeBody({
-      structure: `A 2–3 step symbolic money chain, a dramatic turn, then the payoff line with the key word in **bold**.`,
-      example: `**Work harder → Earn more → Become rich**
-
-Until the question changes:
-
-"Money becomes the **result**, not the goal."`,
+    name: "Common Mistake",
+    default_prompt: categoryPrompt({
+      purpose:
+        "Reveal a mistake the viewer is probably making without realizing it. Make the mistake feel normal, show the hidden consequence, then give the correction they can use today.",
+      structure:
+        "Name the mistake in one plain line. Show why it feels normal. Then reveal the cost in one short line and end with a concrete correction. A short list or a bold contrast works well; do not lecture.",
+      example:
+        "You wait until you feel ready. Readiness is built by starting smaller.",
     }),
   },
   {
-    name: "Myth",
-    default_prompt: readmeBody({
-      structure: `Open with a ~~strikethrough~~ of the myth (paraphrased, never a repeat of the hook line), then the corrected truth with the key word in **bold**, then one final punchline line. No blockquote.`,
-      example: `~~Earning more is the whole game.~~
-
-Earning more helps, but **keeping** it is what builds wealth.
-
-Most people earn more and lose more.`,
+    name: "Myth Busted",
+    default_prompt: categoryPrompt({
+      purpose:
+        "Challenge a widespread belief that sounds true but quietly causes bad decisions. Replace it with an accurate, useful truth.",
+      structure:
+        "Open with the myth in ~~strikethrough~~ (paraphrased, never a repeat of the hook). Replace it with the correction in **bold**, then one punchline that makes the truth stick. Do not attack a strawman.",
+      example:
+        "~~More hours always means better work.~~ Recovery is part of the work.",
     }),
   },
   {
-    name: "Contrarian",
-    default_prompt: readmeBody({
-      structure: `One contrarian one-liner, then a 3-step chain joined by ↓, then a verdict line with the key word in **bold**. No code fence, no blockquote.`,
-      example: `You need **less friction**.
-
-Smaller Task
-↓
-Easier Start
-↓
-More Repetition
-
-Design the behavior. Don't depend on **motivation**.`,
+    name: "Hard Truth",
+    default_prompt: categoryPrompt({
+      purpose:
+        "Say the uncomfortable truth the viewer needs to hear, with enough care that it lands instead of stinging. Direct, never cruel or doom-heavy.",
+      structure:
+        "State the hard truth in one or two short lines. Show the cost of ignoring it. End with the next honest step. No hedging, no false reassurance.",
+      example:
+        "Nobody is coming to rescue your schedule. You have to protect it.",
     }),
   },
   {
-    name: "Unpopular Truth",
-    default_prompt: readmeBody({
-      structure: `A blunt unpopular truth in short bold-flagged lines, then a blunt verdict line with the key word in **bold**. No blockquote.`,
-      example: `The idea can be brilliant.
-
-The design can be beautiful.
-
-But if nobody needs it, **it doesn't matter**.
-
-Customers buy **solutions**, not ideas.`,
+    name: "Quick Fix",
+    default_prompt: categoryPrompt({
+      purpose:
+        "Give one small action the viewer can try immediately to make the problem feel more manageable. Low effort, clear payoff.",
+      structure:
+        "Give ONE concrete action, ideally doable in under 10 minutes. Explain what it changes in one short line. End there; do not turn it into a long list.",
+      example:
+        "Put the task where you can see it, then do the first two minutes.",
+    }),
+  },
+  {
+    name: "Warning Signs",
+    default_prompt: categoryPrompt({
+      purpose:
+        "Help the viewer recognize early signs that something is starting to go wrong before it gets worse. Calm and specific, not alarmist.",
+      structure:
+        "Use a plain \"- \" list for 3-4 short, specific warning signs (not a checklist). End with one calm next-step line. If the topic involves health, safety, legal, or serious money risk, add one brief note to speak with a qualified professional.",
+      example:
+        "You sleep enough but still feel drained. Things you used to love feel flat.",
+    }),
+  },
+  {
+    name: "Say This",
+    default_prompt: categoryPrompt({
+      purpose:
+        "Give the viewer a ready-to-use sentence for a real conversation with a boss, partner, friend, stranger, or themselves. Make it sound like a real person, not a script.",
+      structure:
+        "Put the exact sentence in a one-level blockquote. Explain in one short line why it works. If useful, add one tiny variation. Keep the wording natural and speakable.",
+      example:
+        '> "I need five minutes to think before I answer."',
     }),
   },
   {
     name: "Reframe",
-    default_prompt: readmeBody({
-      structure: `A ~~strikethrough~~ of the wrong belief, the right frame in **bold**, a "- " bullet list of what it reveals, then a plain closer line. No blockquote.`,
-      example: `~~Failure = Losing~~
-
-**Failure = Information**
-
-It shows:
-
-- What failed
-- What was misunderstood
-- What needs to change
-
-Learn from it, then **move**.`,
+    default_prompt: categoryPrompt({
+      purpose:
+        "Flip the meaning of a situation the viewer is stuck in. Replace a defeated story with a more useful frame that still respects how hard it feels.",
+      structure:
+        "Name the old story, then flip it with a clearer frame. Show what changes when they see it the new way. Keep the contrast tight; do not turn it into a motivational speech.",
+      example:
+        'Not "I am behind." Try "I am early in a longer game."',
     }),
   },
   {
-    name: "Q&A",
-    default_prompt: readmeBody({
-      structure: `A stinging question line, a **X ≠ Y** contrast, a short explanation, then a plain two-line verdict. No blockquote.`,
-      example: `Because:
-
-**Knowing ≠ Doing**
-
-You can understand everything and still take **zero action**.
-
-Knowledge creates potential. Execution creates **results**.`,
+    name: "Simple Rule",
+    default_prompt: categoryPrompt({
+      purpose:
+        "Give one memorable rule the viewer can repeat from memory and apply the same day. Simple enough to stick, specific enough to matter.",
+      structure:
+        "State the rule in **bold**. Explain when to use it in one or two lines and what it protects the viewer from. No extra rules.",
+      example:
+        "**If it takes less than two minutes, do it now.**",
     }),
   },
   {
-    name: "Compare",
-    default_prompt: readmeBody({
-      structure: `Compare two opposing sides in a small | table | (2 columns × 3 short data rows), then a plain one-line verdict. No blockquote.`,
-      example: `| Busy | Productive |
-|---|---|
-| Does more | Achieves more |
-| Chases activity | Chases outcomes |
-| Fills time | Creates value |
-
-**Activity ≠ Progress**`,
+    name: "Ask Yourself",
+    default_prompt: categoryPrompt({
+      purpose:
+        "Ask one honest question that interrupts autopilot and helps the viewer see what is really going on. Curious, not judgmental.",
+      structure:
+        "Put the question in a one-level blockquote. Explain why it matters in one short line, then show how to answer it honestly. Do not answer for the viewer.",
+      example:
+        '> "What am I avoiding, and what is that avoidance protecting?"',
     }),
   },
   {
-    name: "Problem → Solution",
-    default_prompt: readmeBody({
-      structure: `"The problem might not be X" + a **bold** alternative, then a 3-line "**X → Y**" chain, then a plain verdict line. No blockquote.`,
-      example: `It might be the **system**.
-
-**Distraction → Remove distraction**
-
-**Complexity → Simplify**
-
-**Friction → Reduce friction**
-
-Change the **system**, not just the willpower.`,
+    name: "Hidden Cost",
+    default_prompt: categoryPrompt({
+      purpose:
+        "Reveal the cost behind a normal habit or decision that the viewer is not counting: money, time, energy, attention, or relationships.",
+      structure:
+        "Show the small visible cost, then the real multiplied cost. End with one simple way to audit or reduce it. Use a number only when it is accurate and easy to verify.",
+      example:
+        "A $4 daily habit is $1,460 a year.",
     }),
   },
   {
-    name: "Warning",
-    default_prompt: readmeBody({
-      structure: `A hard warning line, a short "- " list of red flags, "None of these prove **demand**", then a plain two-line verdict. No blockquote.`,
-      example: `More features.
-
-Better UI.
-
-New logo.
-
-None of these prove **demand**.
-
-Building proves capability. **Selling** proves demand.`,
+    name: "Mini Scenario",
+    default_prompt: categoryPrompt({
+      purpose:
+        "Drop the viewer into a short, recognizable situation and show the trap and the move that changes the outcome. This replaces the old Story format.",
+      structure:
+        "Start with \"Imagine...\" and set the scene in 2-3 beats. Show the trap they could fall into, then the move that changes the outcome. No long narrative, no invented dialogue.",
+      example:
+        "Imagine your phone buzzes with an urgent request while you are already drowning.",
     }),
   },
   {
-    name: "Tips",
-    default_prompt: readmeBody({
-      structure: `A rhetorical question, a reframe ("make the action **smaller**"), three short bold numbered lines, then a plain punchline. No blockquote.`,
-      example: `Don't make the goal bigger.
-
-Make the action **smaller**.
-
-**1 page. 
-5 minutes. 
-1 repetition.**
-
-Consistency starts when **starting** becomes easy.`,
-    }),
-  },
-  {
-    name: "Formula",
-    default_prompt: readmeBody({
-      structure: `One correct money formula as a SINGLE HORIZONTAL line of terms joined by × and = (terms on one line: A × B × C = Value — never stacked vertically), then a one-line reframe, then a plain verdict line. No code fence, no blockquote.`,
-      example: `**Problem × People × Leverage = Value**
-
-Don't just work more.
-
-Create more value with the **same effort**.`,
-    }),
-  },
-  {
-    name: "Stat",
-    default_prompt: readmeBody({
-      structure: `A "**X = label**" contrast on two lines, a plain line, then a **bold** closer. No blockquote.`,
-      example: `**Followers = Attention**
-
-**Customers = Demand**
-
-100 people who desperately need something can be worth more than **100,000 who don't care**.
-
-**Relevance beats reach.**`,
+    name: "Stop Doing This",
+    default_prompt: categoryPrompt({
+      purpose:
+        "Name one habit the viewer should stop, show the real cost, and replace it with a better behavior. Firm about the habit, never contemptuous toward the person.",
+      structure:
+        "Name the habit directly. Explain the cost in one or two lines. End with a specific replacement behavior the viewer can start today.",
+      example:
+        "Stop checking for reassurance every five minutes.",
     }),
   },
 ];
 
 // Pre-rework seed categories that no longer exist in the new 12-category set.
-// Removed on boot so the rotation only ever uses the new README-style formats.
+// Removed on boot so the rotation only ever uses the current set. Both the
+// capitalized names and older lowercase variants are listed for old installs.
 export const LEGACY_SEED_NAMES = [
+  "Story",
+  "Myth",
+  "Contrarian",
+  "Unpopular Truth",
+  "Q&A",
+  "Compare",
+  "Problem → Solution",
+  "Warning",
+  "Tips",
+  "Formula",
+  "Stat",
   "story",
   "tips",
   "steps",
@@ -211,4 +194,7 @@ export const LEGACY_SEED_NAMES = [
   "warning",
   "formula",
   "checklist",
+  "contrarian",
+  "unpopular truth",
+  "problem → solution",
 ];
