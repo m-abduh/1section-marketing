@@ -5,6 +5,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { readdirSync, statSync, unlinkSync, renameSync, existsSync } from "fs";
 import { spawn } from "child_process";
+import { createHash, timingSafeEqual } from "crypto";
 import { startScheduler } from "./scheduler.js";
 import { runPipeline } from "./pipeline.js";
 import { store } from "./db.mjs";
@@ -61,6 +62,46 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/videos", express.static(join(__dirname, "output")));
+
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", uptime: process.uptime() });
+});
+
+// Basic auth gate for the dashboard and API. Credentials live in .env so only
+// internal users can open the dashboard. /videos stays public because Buffer
+// needs to fetch the rendered files over PUBLIC_URL; /health stays public for
+// uptime checks.
+const DASH_USER = process.env.DASHBOARD_USER || "";
+const DASH_PASS = process.env.DASHBOARD_PASSWORD || "";
+const sha256 = (value) => createHash("sha256").update(String(value)).digest();
+const sameValue = (a, b) => timingSafeEqual(sha256(a), sha256(b));
+
+if (DASH_USER && DASH_PASS) {
+  app.use((req, res, next) => {
+    const header = req.headers.authorization || "";
+    if (!/^Basic\s+/i.test(header)) return challenge(res);
+    let decoded;
+    try {
+      decoded = Buffer.from(header.replace(/^Basic\s+/i, ""), "base64").toString("utf8");
+    } catch {
+      return challenge(res);
+    }
+    const sep = decoded.indexOf(":");
+    if (sep < 0) return challenge(res);
+    const user = decoded.slice(0, sep);
+    const pass = decoded.slice(sep + 1);
+    if (sameValue(user, DASH_USER) && sameValue(pass, DASH_PASS)) return next();
+    return challenge(res);
+  });
+} else {
+  console.warn("[auth] DASHBOARD_USER / DASHBOARD_PASSWORD not set — dashboard is unprotected");
+}
+
+function challenge(res) {
+  res.set("WWW-Authenticate", 'Basic realm="1section dashboard", charset="UTF-8"');
+  return res.status(401).send("Authentication required");
+}
+
 app.use("/music", express.static(join(__dirname, "music")));
 
 app.get("/", (req, res) => {
@@ -75,10 +116,6 @@ app.get("/", (req, res) => {
     failed,
     settings: getSettings(),
   });
-});
-
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", uptime: process.uptime() });
 });
 
 // Read-only channel analytics (Buffer aggregated metrics + local post stats).

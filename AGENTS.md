@@ -46,7 +46,7 @@ Supported Markdown (CSS in `builder/unified.html`): h1–h6, bold/italic/strike/
 Arrow chains are auto-detected by `chainifyMarkdown()` and wrapped in a centered bordered card (`.chain`): either `A → B → C` (one line, or several short lines) or steps ending in `↓` (one per line, or `A ↓ B ↓ C`). This is the "sequence" layout the category prompts lean on, so steps should stay 2–5 words.
 
 ## Server / API
-`server.js` serves the EJS dashboard (`views/index.ejs`) + REST API:
+`server.js` serves the EJS dashboard (`views/index.ejs`) + REST API. The dashboard and all `/api/*` routes are protected by HTTP Basic Auth (`DASHBOARD_USER` / `DASHBOARD_PASSWORD` in `.env`); `/videos/*` stays public because Buffer fetches rendered files, and `/health` stays public for uptime checks.
 - `/api/accounts` (GET/POST/PUT/DELETE, `/reorder`), `/api/categories` (CRUD)
 - `/api/accounts/:id/categories` (GET list; PUT full-replace mapping; `/…/:categoryId/prompt` to set a prompt)
 - `/api/videos` (list by `?account_id=`), `/api/videos/:id/retry`, `/api/videos/:id` (DELETE)
