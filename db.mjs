@@ -9,7 +9,7 @@ const DB_PATH = process.env.DB_PATH || join(__dirname, "db.sqlite");
 
 // Bump these when the prompt revamp should replace saved prompt text once.
 // They are data migrations, not scheduling/rotation logic.
-const BASE_PROMPT_VERSION = "2026-10-content-revamp-v1";
+const BASE_PROMPT_VERSION = "2026-10-content-revamp-v3";
 const ACCOUNT_PROMPT_VERSION = "2026-10-content-revamp-v1";
 
 export const db = new Database(DB_PATH);

@@ -14,10 +14,19 @@
 const COMMON_RULES = `Write in natural, native English (US) only. No translated-sounding phrasing, no mixed languages, no generic AI-speak.
 Choose exactly ONE topic from the NICHE TOPICS list supplied in the prompt. The whole post must stay on that one topic and inside that niche. Never switch niches and never invent an unrelated topic.
 Make the viewer feel instantly seen ("this is so me") without shaming them. Be specific, accurate, and useful. Never invent statistics, quotes, or study results.
+The brand has no personal history. Never write first-person brand testimony such as "I used to", "I spent months", "I know it feels", "my", or "we used to" as if the brand experienced it. Speak to the viewer as "you". Use "we/our/us" only in a general or conversational sense, never to claim personal experience. First-person is allowed only inside a direct quote the viewer can say.
+Soften claims: never use "every time", "always", "everything changed", or "never fails" in any field, even inside a myth, hook, conclusion, or quote. Avoid "only" when it creates an absolute claim. Prefer "often", "can", "usually", "may", or "tends to".
+Avoid exaggerated comparisons or false equivalence, such as "daily coffee costs more than rent". If you use arithmetic, keep it simple and accurate.
 Use standard English number and currency formatting (20%, $1,200, 10 hrs), never localized formats like "20 %".
+Include at most ONE real action per post. Do not stack steps or turn the body into a to-do list.
+Keep the caption to about 20 to 40 words with one useful observation. Vary the close: invite a save, a send, or a comment, but never all three and never sound like an ad.
+Do not use em dashes (—) or en dashes (–). Use periods, commas, or short sentences. Avoid AI-cliché phrases such as "in today's fast-paced world", "game-changer", "unlock", "dive in", "it's not just X, it's Y", and "here's the kicker".
+Never use strikethrough formatting (do not wrap text in double tildes). For a myth, use a one-level blockquote starting with "Myth:" instead.
+Write any subhead as a proper Markdown heading (### or ####) on its own line, followed by a blank line.
 The "hook" is the title above the body. The body must add new information and must never repeat the hook.
 Use the markdown shape that fits the category, and vary it from post to post. Keep the body under about 45 words so it fits one static slide.
-Never wrap the body or multiple lines in inline backticks. Use a fenced code block only when the category specifically asks for a formula.`;
+Never wrap the body or multiple lines in inline backticks. Use a fenced code block only when the category specifically asks for a formula.
+Before returning, reread the caption and body once and remove any first-person brand testimony, absolute claim, em dash, or strikethrough.`;
 
 function categoryPrompt({ purpose, structure, example }) {
   return `CATEGORY BEHAVIOR
@@ -50,9 +59,9 @@ export const CATEGORY_SEEDS = [
       purpose:
         "Challenge a widespread belief that sounds true but quietly causes bad decisions. Replace it with an accurate, useful truth.",
       structure:
-        "Open with the myth in ~~strikethrough~~ (paraphrased, never a repeat of the hook). Replace it with the correction in **bold**, then one punchline that makes the truth stick. Do not attack a strawman.",
+        "Open with the myth as a one-level blockquote starting with \"Myth:\" (paraphrased, never a repeat of the hook). Follow with a blank line, then the correction in one or two plain sentences. If useful, end with one small action. Never use strikethrough.",
       example:
-        "~~More hours always means better work.~~ Recovery is part of the work.",
+        "> Myth: more hours means better work.\n\nRecovery is part of the work. A short break can protect the next hour.",
     }),
   },
   {

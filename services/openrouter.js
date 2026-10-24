@@ -84,7 +84,9 @@ function extractJSON(text) {
 // regardless of which prompt revision is saved.
 const OUTPUT_CONTRACT = `FINAL OUTPUT CONTRACT (overrides any earlier output-format instruction):
 Return ONLY raw JSON (no markdown fences) with exactly these keys: "hook", "content", "caption", "conclusion".
-"conclusion" = ONE short, plain-text sentence (max 18 words) that states the takeaway of this exact post. No markdown, no hashtags, no @mentions, no emojis, and do not repeat the hook word-for-word. It is printed on the dark end card under "THE TAKEAWAY".`;
+"conclusion" = ONE short, plain-text sentence (max 18 words) that states the takeaway of this exact post. No markdown, no hashtags, no @mentions, no emojis, and do not repeat the hook word-for-word. It is printed on the dark end card under "THE TAKEAWAY".
+"caption" must be about 20 to 40 words and must not contain first-person brand testimony ("I used to", "I spent", "I know it feels", "my", "we used to"). Do not use em dashes or strikethrough formatting anywhere. Soften claims and give at most one real action.
+Before returning, scan every field for these banned words: "always", "every time", "everything changed", "never fails", "I used to", "I spent", "I know it feels", "my", "we used to". If any appear, rewrite that field. Also remove every em dash and all strikethrough formatting.`;
 
 /**
  * Generate post content (copywriting + caption) for an account+category.
