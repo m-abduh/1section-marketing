@@ -295,7 +295,7 @@ app.get("/music", (req, res) => {
 });
 
 app.get("/analytics", (req, res) => {
-  res.render("analytics");
+  res.render("analytics", page("analytics", "Analytics"));
 });
 
 app.use((req, res, next) => {
