@@ -1,0 +1,264 @@
+<%- include('partials/head') %>
+
+<header class="page-head">
+  <div>
+    <div class="eyebrow">
+      <span class="dot ok"></span>
+      Workspace · <%= accounts.length %> account<%= accounts.length === 1 ? '' : 's' %> · <%= categories.length %> categor<%= categories.length === 1 ? 'y' : 'ies' %>
+    </div>
+    <h1>Overview</h1>
+    <p class="sub">Performance across your Buffer channels, recent renders, and what the rotation will publish next.</p>
+  </div>
+  <div class="head-actions">
+    <div class="segmented" id="rangePicker">
+      <button data-days="7" onclick="setRange(7)">7d</button>
+      <button data-days="30" class="on" onclick="setRange(30)">30d</button>
+      <button data-days="90" onclick="setRange(90)">90d</button>
+    </div>
+    <button class="btn" onclick="location.reload()">
+      <svg class="ico" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-refresh"/></svg>
+      Refresh
+    </button>
+    <button class="btn btn-primary" id="genBtn" onclick="UI.generateNow(this)">
+      <svg class="ico" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-play"/></svg>
+      Generate post
+    </button>
+  </div>
+</header>
+
+<section class="stats" id="kpiRow">
+  <div class="stat"><div class="k">Views</div><div class="v skeleton">0000</div><div class="f">&nbsp;</div></div>
+  <div class="stat"><div class="k">Reactions</div><div class="v skeleton">0000</div><div class="f">&nbsp;</div></div>
+  <div class="stat"><div class="k">Engagement</div><div class="v skeleton">0.00%</div><div class="f">&nbsp;</div></div>
+  <div class="stat"><div class="k">Buffer posts</div><div class="v skeleton">0000</div><div class="f">&nbsp;</div></div>
+  <div class="stat"><div class="k">Local success</div><div class="v skeleton">00%</div><div class="f">&nbsp;</div></div>
+</section>
+
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head">
+      <h2>Activity</h2>
+      <span class="hint">generated videos · last 14 days</span>
+    </div>
+    <div class="card-body"><div class="bars" id="activityChart"></div></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Category mix</h2>
+      <span class="hint" id="categoryHint">all generated videos</span>
+    </div>
+    <div class="card-body" id="categoryChart">
+      <div class="empty">Loading…</div>
+    </div>
+  </section>
+</div>
+
+<section class="card mt-14">
+  <div class="card-head">
+    <h2>Channel performance</h2>
+    <span class="hint" id="analyticsUpdated">loading…</span>
+  </div>
+  <div class="table-wrap stackable">
+    <table class="data" id="accountTable"></table>
+  </div>
+</section>
+
+<div class="grid-2 even mt-14">
+  <section class="card">
+    <div class="card-head">
+      <h2>Recent videos</h2>
+      <a class="btn btn-sm btn-ghost" href="/videos">All videos
+        <svg class="ico" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><use href="#i-arrow-right"/></svg>
+      </a>
+    </div>
+    <% if (!recent.length) { %>
+      <div class="empty">
+        <div class="empty-title">Nothing generated yet</div>
+        <div class="empty-hint">Run the pipeline to create the first AI-written video for the next slot in the rotation.</div>
+        <button class="btn btn-primary btn-sm" onclick="UI.generateNow(this)">Generate first post</button>
+      </div>
+    <% } else { %>
+      <div class="list">
+        <% recent.forEach((v) => { %>
+          <a class="list-row" href="/videos?account=<%= v.account_id %>">
+            <div class="grow">
+              <div class="list-title">
+                <span class="badge <%= v.status === 'success' ? 'ok' : v.status === 'failed' ? 'bad' : 'warn' %>"><span class="dot"></span><%= v.status %></span>
+                <span>#<%= v.id %></span>
+                <span class="muted small"><%= v.category_name || 'Uncategorized' %></span>
+              </div>
+              <div class="list-sub"><%= v.hook || v.caption || '—' %></div>
+            </div>
+            <div class="small nowrap" style="text-align:right">
+              <div class="muted"><%= v.account_name %></div>
+              <div class="faint" data-rel="<%= v.created_at %>"></div>
+            </div>
+          </a>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+
+  <div class="stack">
+    <section class="card">
+      <div class="card-head">
+        <h2>Next in rotation</h2>
+        <span class="hint">read-only preview</span>
+      </div>
+      <div class="card-body">
+        <% if (!next) { %>
+          <div class="empty" style="padding:14px 0">
+            <div class="empty-title">Rotation is empty</div>
+            <div class="empty-hint">Add a Buffer account and at least one category to start the pipeline.</div>
+          </div>
+        <% } else { %>
+          <div class="row" style="gap:12px">
+            <div class="avatar"><%= ((next.account.split('.').pop() || next.account).replace(/[^a-zA-Z0-9]/g, '').slice(0, 2) || '?').toUpperCase() %></div>
+            <div class="grow">
+              <div style="font-size:15px;font-weight:700;letter-spacing:-.02em"><%= next.account %></div>
+              <div class="small muted">will publish a <strong><%= next.category %></strong> post</div>
+            </div>
+          </div>
+          <div class="form-actions mt-14">
+            <button class="btn btn-sm btn-primary" onclick="UI.generateNow(this)">Run this slot</button>
+            <a class="btn btn-sm" href="/accounts/<%= next.accountId %>/prompts">Edit prompts</a>
+          </div>
+        <% } %>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Posting window</h2>
+        <a class="btn btn-sm btn-ghost" href="/settings">Settings</a>
+      </div>
+      <div class="card-body">
+        <dl class="kv">
+          <dt>Videos per day</dt><dd><%= settings.videosPerDay %></dd>
+          <dt>Window</dt><dd><%= settings.windowStart %> – <%= settings.windowEnd %></dd>
+          <dt>Timezone</dt><dd><%= settings.tz %></dd>
+          <dt>Slots</dt><dd><%= settings.schedules.length ? settings.schedules.length + ' cron job(s)' : 'scheduler disabled' %></dd>
+        </dl>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const state = { days: 30 };
+
+function setRange(days) {
+  state.days = days;
+  document.querySelectorAll('#rangePicker button').forEach((b) => b.classList.toggle('on', Number(b.dataset.days) === days));
+  loadAnalytics();
+}
+
+async function loadAnalytics() {
+  const meta = document.getElementById('analyticsUpdated');
+  try {
+    const data = await UI.api('/api/analytics?days=' + state.days);
+    renderKpis(data);
+    renderActivity(data.daily || []);
+    renderCategories(data.categories || []);
+    renderTable(data.accounts || []);
+    const when = new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    meta.textContent = `${data.online}/${data.totalAccounts} channels connected · updated ${when}`;
+  } catch (err) {
+    meta.textContent = 'analytics unavailable: ' + err.message;
+  }
+}
+
+function renderKpis(data) {
+  const t = data.totals || {};
+  const items = [
+    { k: 'Views', v: UI.fmt(t.views), f: `${data.online}/${data.totalAccounts} channels connected` },
+    { k: 'Reactions', v: UI.fmt(t.reactions), f: 'likes · saves · shares' },
+    { k: 'Engagement', v: (Number(t.engagementRate) || 0).toFixed(2) + '%', f: 'reactions ÷ views' },
+    { k: 'Buffer posts', v: UI.fmt(t.posts), f: `last ${data.range.days} days` },
+    { k: 'Local success', v: (Number(t.successRate) || 0).toFixed(1) + '%', f: `${UI.fmt(t.success)} of ${UI.fmt(t.generated)} generated` },
+  ];
+  document.getElementById('kpiRow').innerHTML = items
+    .map((i) => `<div class="stat"><div class="k">${i.k}</div><div class="v">${i.v}</div><div class="f">${UI.esc(i.f)}</div></div>`)
+    .join('');
+}
+
+function renderActivity(daily) {
+  const el = document.getElementById('activityChart');
+  if (!daily.length) { el.innerHTML = '<div class="empty" style="width:100%">No activity yet</div>'; return; }
+  const max = Math.max(1, ...daily.map((d) => d.count));
+  el.innerHTML = daily.map((d) => {
+    const dt = new Date(d.date + 'T12:00:00');
+    const lbl = dt.toLocaleDateString([], { weekday: 'short' }).slice(0, 2);
+    const h = Math.round((d.count / max) * 100);
+    return `<div class="bar-col" title="${UI.esc(d.date)}: ${d.count} video(s)">
+      <div class="bar-track"><div class="bar" style="height:${Math.max(3, h)}%"></div></div>
+      <div class="bar-lbl">${lbl}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderCategories(cats) {
+  const el = document.getElementById('categoryChart');
+  if (!cats.length) { el.innerHTML = '<div class="empty">No videos yet</div>'; return; }
+  const max = Math.max(1, ...cats.map((c) => c.count));
+  el.innerHTML = cats.map((c) => `
+    <div class="catrow">
+      <div class="nm" title="${UI.esc(c.name)}">${UI.esc(c.name)}</div>
+      <div class="track"><div class="fill" style="width:${Math.round((c.count / max) * 100)}%"></div></div>
+      <div class="ct">${c.count}</div>
+    </div>`).join('');
+}
+
+function channelChips(channels) {
+  if (!channels || !channels.length) return '<span class="chip">not connected</span>';
+  return channels.map((c) => `<span class="chip">${UI.esc(UI.serviceLabel(c.service))}</span>`).join('');
+}
+
+function renderTable(accounts) {
+  const table = document.getElementById('accountTable');
+  if (!accounts.length) {
+    table.innerHTML = '<tbody><tr><td><div class="empty">No Buffer accounts yet. <a href="/accounts">Add one</a>.</div></td></tr></tbody>';
+    return;
+  }
+  const head = `<thead><tr>
+    <th>Account</th><th>Channels</th><th class="num">Posts</th><th class="num">Views</th>
+    <th class="num">Reactions</th><th class="num">Eng.</th><th class="num">Generated</th><th>Last post</th><th></th>
+  </tr></thead>`;
+
+  const rows = accounts.map((a) => {
+    const status = a.ok
+      ? '<span class="dot ok" title="connected"></span>'
+      : `<span class="dot bad" title="${UI.esc(a.error || 'offline')}"></span>`;
+    return `<tr>
+      <td data-span="3">
+        <div class="row" style="gap:8px;flex-wrap:nowrap">
+          ${status}
+          <div style="min-width:0">
+            <div style="font-weight:650">${UI.esc(a.account)}</div>
+            <div class="faint small">${UI.esc(a.link || 'no link set')}</div>
+          </div>
+        </div>
+      </td>
+      <td data-label="Channels"><div class="chips">${channelChips(a.channels)}</div></td>
+      <td class="num" data-label="Posts">${UI.fmt(a.metrics.posts)}</td>
+      <td class="num" data-label="Views">${UI.fmt(a.metrics.views)}</td>
+      <td class="num" data-label="Reactions">${UI.fmt(a.metrics.reactions)}</td>
+      <td class="num" data-label="Eng.">${(Number(a.metrics.engagementRate) || 0).toFixed(2)}%</td>
+      <td class="num" data-label="Generated">${UI.fmt(a.local.generated)}</td>
+      <td class="nowrap" data-label="Last post">${a.local.lastAt ? UI.relTime(a.local.lastAt) : '—'}</td>
+      <td class="actions" data-span="3">
+        <div class="row-actions">
+          <a class="btn btn-sm" href="/accounts/${a.account_id}">Open</a>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  table.innerHTML = head + '<tbody>' + rows + '</tbody>';
+}
+
+loadAnalytics();
+</script>
+
+<%- include('partials/foot') %>

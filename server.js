@@ -10,6 +10,7 @@ import { startScheduler } from "./scheduler.js";
 import { runPipeline } from "./pipeline.js";
 import { store } from "./db.mjs";
 import { getSettings } from "./scheduler.js";
+import { nextSlot } from "./pipeline.js";
 import { getAnalytics } from "./services/analytics.mjs";
 import { getFullAnalytics } from "./services/analytics-full.mjs";
 
@@ -62,7 +63,7 @@ app.set("views", join(__dirname, "views"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/videos", express.static(join(__dirname, "output")));
+app.use("/videos", express.static(join(__dirname, "output"), { index: false, redirect: false }));
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });
@@ -103,24 +104,205 @@ function challenge(res) {
   return res.status(401).send("Authentication required");
 }
 
-app.use("/music", express.static(join(__dirname, "music")));
+app.use("/css", express.static(join(__dirname, "public/css")));
+app.use("/js", express.static(join(__dirname, "public/js")));
+app.use("/music", express.static(join(__dirname, "music"), { index: false, redirect: false }));
 
+// ---------- Page helpers ----------
+function navCounts() {
+  return {
+    accounts: store.listAccounts().length,
+    categories: store.listCategories().length,
+    videos: store.countVideos(),
+  };
+}
+
+function videoStats(videos) {
+  const stats = { generated: videos.length, success: 0, failed: 0, pending: 0, lastAt: null, successRate: 0 };
+  for (const v of videos) {
+    if (v.status === "success") stats.success++;
+    else if (v.status === "failed") stats.failed++;
+    else stats.pending++;
+    if (v.created_at && (!stats.lastAt || v.created_at > stats.lastAt)) stats.lastAt = v.created_at;
+  }
+  stats.successRate = stats.generated ? Math.round((stats.success / stats.generated) * 100) : 0;
+  return stats;
+}
+
+// Read-only peek at the next rotation slot (nextSlot never advances state).
+function nextUp() {
+  try {
+    const slot = nextSlot();
+    if (!slot) return null;
+    return {
+      account: slot.account.name,
+      accountId: slot.account.id,
+      category: slot.categoryRow.category_name,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function page(active, title, extra = {}) {
+  return { active, title, counts: navCounts(), ...extra };
+}
+
+function renderMissing(res) {
+  return res.status(404).render("not-found", page("", "Not found"));
+}
+
+// ---------- Pages ----------
 app.get("/", (req, res) => {
-  const accounts = store.listAccounts();
-  const categories = store.listCategories();
   const videos = store.listVideos();
-  const failed = videos.filter((v) => v.status === "failed").length;
-  res.render("index", {
-    accounts,
-    categories,
-    videos,
-    failed,
+  res.render("overview", page("overview", "Overview", {
+    accounts: store.listAccounts(),
+    categories: store.listCategories(),
+    stats: videoStats(videos),
+    recent: videos.slice(0, 6),
+    next: nextUp(),
     settings: getSettings(),
+  }));
+});
+
+app.get("/accounts", (req, res) => {
+  const videos = store.listVideos();
+  const rows = store.listAccounts().map((account) => {
+    const { buffer_token, ...safe } = account;
+    return {
+      ...safe,
+      tokenTail: (buffer_token || "").slice(-4),
+      stats: videoStats(videos.filter((v) => v.account_id === account.id)),
+      categoryCount: store.listAccountCategories(account.id).length,
+    };
   });
+  res.render("accounts", page("accounts", "Accounts", { rows }));
+});
+
+app.get("/accounts/:id", (req, res) => {
+  const account = store.getAccount(Number(req.params.id));
+  if (!account) return renderMissing(res);
+
+  const { buffer_token, ...safe } = account;
+  const videos = store.listVideos({ accountId: account.id });
+  const categories = store.listAccountCategories(account.id);
+
+  res.render("account", page("accounts", account.name, {
+    account: safe,
+    tokenTail: (buffer_token || "").slice(-4),
+    stats: videoStats(videos),
+    categories,
+    customCount: categories.filter((r) => r.prompt && r.prompt.trim()).length,
+    recent: videos.slice(0, 10),
+  }));
+});
+
+app.get("/accounts/:id/prompts", (req, res) => {
+  const account = store.getAccount(Number(req.params.id));
+  if (!account) return renderMissing(res);
+
+  const { buffer_token, ...safe } = account;
+  const categories = store.listAccountCategories(account.id);
+
+  res.render("prompts", page("accounts", `${account.name} · Prompts`, {
+    account: safe,
+    categories,
+    customCount: categories.filter((r) => r.prompt && r.prompt.trim()).length,
+  }));
+});
+
+app.get("/videos", (req, res) => {
+  const accountId = Number(req.query.account) || null;
+  const status = ["success", "failed", "pending"].includes(String(req.query.status)) ? String(req.query.status) : "";
+  const limit = Math.min(500, Math.max(20, Number(req.query.limit) || 60));
+  const all = store.listVideos(accountId ? { accountId } : undefined);
+  const filtered = status ? all.filter((v) => v.status === status) : all;
+
+  res.render("videos", page("videos", "Videos", {
+    accounts: store.listAccounts(),
+    videos: filtered.slice(0, limit),
+    accountId,
+    status,
+    limit,
+    total: filtered.length,
+    statusCounts: {
+      all: all.length,
+      success: all.filter((v) => v.status === "success").length,
+      failed: all.filter((v) => v.status === "failed").length,
+      pending: all.filter((v) => v.status === "pending").length,
+    },
+  }));
+});
+
+app.get("/categories", (req, res) => {
+  const accounts = store.listAccounts();
+  const videos = store.listVideos();
+
+  const overrides = new Map();
+  for (const account of accounts) {
+    for (const row of store.listAccountCategories(account.id)) {
+      if (row.prompt && row.prompt.trim()) {
+        overrides.set(row.category_id, (overrides.get(row.category_id) || 0) + 1);
+      }
+    }
+  }
+
+  const usage = new Map();
+  for (const v of videos) {
+    if (v.category_id) usage.set(v.category_id, (usage.get(v.category_id) || 0) + 1);
+  }
+
+  res.render("categories", page("categories", "Categories", {
+    accountCount: accounts.length,
+    categories: store.listCategories().map((c) => ({
+      ...c,
+      overrideCount: overrides.get(c.id) || 0,
+      videoCount: usage.get(c.id) || 0,
+    })),
+  }));
+});
+
+app.get("/settings", (req, res) => {
+  res.render("settings", page("settings", "Settings", {
+    settings: getSettings(),
+    config: {
+      videos_per_day: store.getSetting("videos_per_day", "3"),
+      tz: store.getSetting("tz", process.env.TZ || "America/New_York"),
+      window_start: store.getSetting("window_start", "06:00"),
+      window_end: store.getSetting("window_end", "22:00"),
+      ai_base_prompt: store.getSetting("ai_base_prompt", ""),
+    },
+    rotation: store.getSettingJSON("rotation", null),
+    next: nextUp(),
+    publicUrl: process.env.PUBLIC_URL || "",
+    aiModel: process.env.OPENROUTER_MODEL || "",
+  }));
+});
+
+app.get("/music", (req, res) => {
+  let files = [];
+  try {
+    files = readdirSync(MUSIC_DIR)
+      .filter((f) => AUDIO_RE.test(f))
+      .sort((a, b) => a.localeCompare(b))
+      .map((name) => {
+        const st = statSync(join(MUSIC_DIR, name));
+        return { name, size: st.size, mtime: st.mtimeMs };
+      });
+  } catch {}
+
+  res.render("music", page("music", "Music", { files }));
 });
 
 app.get("/analytics", (req, res) => {
   res.render("analytics");
+});
+
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api/")) return next();
+  if (req.method !== "GET") return next();
+  if (req.accepts("html")) return renderMissing(res);
+  next();
 });
 
 // Full read-only Buffer analytics + latest generated content per account.

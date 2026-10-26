@@ -1,0 +1,152 @@
+<%- include('partials/head') %>
+
+<header class="page-head">
+  <div>
+    <div class="eyebrow">
+      <a href="/accounts">Accounts</a>
+      <span class="sep">/</span>
+      <a href="/accounts/<%= account.id %>"><%= account.name %></a>
+      <span class="sep">/</span>
+      <span>Prompts</span>
+    </div>
+    <h1>Categories &amp; prompts</h1>
+    <p class="sub">Each category can carry its own AI instruction for <strong><%= account.name %></strong>. Empty means the category default is used.</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn" href="/accounts/<%= account.id %>">Back to account</a>
+    <button class="btn btn-primary" onclick="saveAll(this)">Save all changes</button>
+  </div>
+</header>
+
+<section class="card mb-0">
+  <div class="card-body tight">
+    <div class="row" style="gap:10px;align-items:flex-start">
+      <span class="badge info">How it works</span>
+      <p class="small muted" style="flex:1;min-width:220px;line-height:1.6">
+        The pipeline resolves the prompt as <strong>account override</strong> → <strong>category default</strong>.
+        The AI output contract (hook, content, caption, conclusion) is always appended, so older prompts keep working.
+      </p>
+    </div>
+  </div>
+</section>
+
+<div class="stack mt-14">
+  <% if (!categories.length) { %>
+    <section class="card">
+      <div class="empty">
+        <div class="empty-title">No categories mapped</div>
+        <div class="empty-hint">Create a category first, then it will appear here for every account.</div>
+        <a class="btn btn-primary" href="/categories">Go to categories</a>
+      </div>
+    </section>
+  <% } %>
+
+  <% categories.forEach((c, index) => { %>
+    <% const custom = !!(c.prompt && c.prompt.trim()); %>
+    <details class="acc-item" <%= custom || index === 0 ? 'open' : '' %>>
+      <summary>
+        <strong><%= c.category_name %></strong>
+        <span class="badge <%= custom ? 'info' : 'plain' %>"><%= custom ? 'custom override' : 'using default' %></span>
+        <span class="faint small"><%= c.default_prompt.length %> chars default</span>
+        <svg class="ico caret" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chevron"/></svg>
+      </summary>
+      <div class="acc-body">
+        <label class="field">
+          <span class="lbl">Account prompt for <%= c.category_name %></span>
+          <textarea class="textarea mono" data-category="<%= c.category_id %>" data-original="<%= c.prompt || '' %>" placeholder="Leave empty to use the default prompt. Start typing to override it for <%= account.name %>."><%= c.prompt || '' %></textarea>
+        </label>
+
+        <div class="row" style="justify-content:space-between">
+          <div class="row">
+            <button class="btn btn-sm btn-primary" onclick="savePrompt(<%= c.category_id %>, this)">Save prompt</button>
+            <% if (custom) { %>
+              <button class="btn btn-sm" onclick="resetPrompt(<%= c.category_id %>, this)">Reset to default</button>
+            <% } %>
+          </div>
+          <span class="faint small"><%= c.prompt ? c.prompt.length : 0 %> / <%= c.default_prompt.length %> chars</span>
+        </div>
+
+        <details class="acc-item" style="margin-top:12px;background:var(--surface-2)">
+          <summary style="font-size:12px">
+            <span>Category default prompt</span>
+            <svg class="ico caret" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chevron"/></svg>
+          </summary>
+          <div class="acc-body">
+            <% if (c.default_prompt && c.default_prompt.trim()) { %>
+              <pre class="code"><%= c.default_prompt %></pre>
+            <% } else { %>
+              <div class="empty" style="padding:12px 0">This category has no default prompt.</div>
+            <% } %>
+          </div>
+        </details>
+      </div>
+    </details>
+  <% }) %>
+</div>
+
+<script>
+const ACCOUNT_ID = <%= account.id %>;
+
+async function savePrompt(categoryId, btn) {
+  const textarea = btn.closest('.acc-body').querySelector('textarea');
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    await UI.put(`/api/accounts/${ACCOUNT_ID}/categories/${categoryId}/prompt`, { prompt: textarea.value });
+    UI.toast('Prompt saved', 'ok');
+    setTimeout(() => location.reload(), 500);
+  } catch (err) {
+    UI.toast(err.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+}
+
+async function resetPrompt(categoryId, btn) {
+  const ok = await UI.confirm({
+    title: 'Reset to default?',
+    body: 'The account-specific prompt will be cleared and the category default will be used instead.',
+    confirmLabel: 'Reset prompt',
+  });
+  if (!ok) return;
+  const card = btn.closest('details.acc-item');
+  const textarea = card.querySelector('textarea');
+  try {
+    await UI.put(`/api/accounts/${ACCOUNT_ID}/categories/${categoryId}/prompt`, { prompt: '' });
+    textarea.value = '';
+    textarea.dataset.original = '';
+    UI.toast('Reset to the category default', 'ok');
+    setTimeout(() => location.reload(), 500);
+  } catch (err) {
+    UI.toast(err.message, 'err');
+  }
+}
+
+async function saveAll(btn) {
+  const areas = Array.from(document.querySelectorAll('textarea[data-category]'));
+  const dirty = areas.filter((el) => el.value !== el.dataset.original);
+  if (!dirty.length) return UI.toast('Nothing to save');
+
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Saving…';
+  let saved = 0;
+  try {
+    for (const area of dirty) {
+      await UI.put(`/api/accounts/${ACCOUNT_ID}/categories/${area.dataset.category}/prompt`, { prompt: area.value });
+      area.dataset.original = area.value;
+      saved++;
+    }
+    UI.toast(`${saved} prompt${saved === 1 ? '' : 's'} saved`, 'ok');
+    setTimeout(() => location.reload(), 500);
+  } catch (err) {
+    UI.toast(err.message, 'err');
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+}
+</script>
+
+<%- include('partials/foot') %>

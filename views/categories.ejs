@@ -1,0 +1,134 @@
+<%- include('partials/head') %>
+
+<header class="page-head">
+  <div>
+    <div class="eyebrow">Content · <%= categories.length %> categor<%= categories.length === 1 ? 'y' : 'ies' %> · <%= accountCount %> accounts</div>
+    <h1>Categories</h1>
+    <p class="sub">The content grid. Every category is mirrored onto every account, and the rotation walks account × category in order.</p>
+  </div>
+  <div class="head-actions">
+    <button class="btn btn-primary" onclick="openCategoryModal()">
+      <svg class="ico" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-plus"/></svg>
+      Add category
+    </button>
+  </div>
+</header>
+
+<% if (!categories.length) { %>
+  <section class="card">
+    <div class="empty">
+      <div class="empty-title">No categories yet</div>
+      <div class="empty-hint">A category is a content format (story, stat, checklist…). Each one carries a default AI prompt.</div>
+      <button class="btn btn-primary" onclick="openCategoryModal()">Add the first category</button>
+    </div>
+  </section>
+<% } else { %>
+  <div class="stack-sm">
+    <% categories.forEach((c) => { %>
+      <details class="acc-item">
+        <summary>
+          <strong><%= c.name %></strong>
+          <span class="badge"><%= c.videoCount %> video<%= c.videoCount === 1 ? '' : 's' %></span>
+          <span class="badge <%= c.overrideCount ? 'info' : 'plain' %>">
+            <%= c.overrideCount ? c.overrideCount + ' account override' + (c.overrideCount === 1 ? '' : 's') : 'default prompt everywhere' %>
+          </span>
+          <span class="faint small"><%= c.default_prompt.length %> chars</span>
+          <svg class="ico caret" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chevron"/></svg>
+        </summary>
+        <div class="acc-body">
+          <% if (c.default_prompt && c.default_prompt.trim()) { %>
+            <pre class="code" style="max-height:260px"><%= c.default_prompt %></pre>
+          <% } else { %>
+            <div class="empty" style="padding:12px 0">No default prompt yet — accounts will fall back to the base AI prompt.</div>
+          <% } %>
+
+          <div class="row mt-14" style="justify-content:space-between">
+            <div class="row">
+              <button class="btn btn-sm btn-primary" onclick="openCategoryModal(<%= c.id %>)">Edit category</button>
+            </div>
+            <button class="btn btn-sm btn-ghost" style="color:var(--bad)" data-name="<%= c.name %>" onclick="deleteCategory(<%= c.id %>, this.dataset.name)">
+              <svg class="ico" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-trash"/></svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      </details>
+    <% }) %>
+  </div>
+<% } %>
+
+<div class="modal-backdrop" id="categoryModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="categoryModalTitle">Add category</h3>
+      <p>Categories are global and immediately appear on every account.</p>
+    </div>
+    <div class="modal-body">
+      <label class="field">
+        <span class="lbl">Category name</span>
+        <input class="input" type="text" id="cat_name" placeholder="e.g. story, stat, checklist">
+      </label>
+      <label class="field">
+        <span class="lbl">Default AI prompt</span>
+        <textarea class="textarea mono" id="cat_prompt" placeholder="Describe the angle, structure and tone for this category."></textarea>
+        <span class="help">Accounts can override this per account from the account's prompts page.</span>
+      </label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="UI.closeModal('categoryModal')">Cancel</button>
+      <button class="btn btn-primary" id="cat_save" onclick="saveCategory()">Save category</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const categoryData = <%- JSON.stringify(categories.map((c) => ({ id: c.id, name: c.name, prompt: c.default_prompt }))) %>;
+let editingCategoryId = null;
+
+function openCategoryModal(id) {
+  editingCategoryId = id || null;
+  const row = categoryData.find((c) => c.id === id);
+  document.getElementById('categoryModalTitle').textContent = id ? 'Edit category' : 'Add category';
+  document.getElementById('cat_name').value = row ? row.name : '';
+  document.getElementById('cat_prompt').value = row ? row.prompt : '';
+  UI.openModal('categoryModal');
+  document.getElementById('cat_name').focus();
+}
+
+async function saveCategory() {
+  const name = document.getElementById('cat_name').value.trim();
+  const prompt = document.getElementById('cat_prompt').value;
+  if (!name) return UI.toast('Category name is required', 'err');
+
+  const btn = document.getElementById('cat_save');
+  btn.disabled = true;
+  try {
+    if (editingCategoryId) await UI.put('/api/categories/' + editingCategoryId, { name, default_prompt: prompt });
+    else await UI.post('/api/categories', { name, default_prompt: prompt });
+    UI.toast(editingCategoryId ? 'Category updated' : 'Category added', 'ok');
+    setTimeout(() => location.reload(), 500);
+  } catch (err) {
+    UI.toast(err.message, 'err');
+    btn.disabled = false;
+  }
+}
+
+async function deleteCategory(id, name) {
+  const ok = await UI.confirm({
+    title: 'Delete category?',
+    body: `${name} is removed from every account. Existing videos keep their category label but lose the link.`,
+    confirmLabel: 'Delete category',
+    danger: true,
+  });
+  if (!ok) return;
+  try {
+    await UI.del('/api/categories/' + id);
+    UI.toast('Category deleted', 'ok');
+    setTimeout(() => location.reload(), 400);
+  } catch (err) {
+    UI.toast(err.message, 'err');
+  }
+}
+</script>
+
+<%- include('partials/foot') %>

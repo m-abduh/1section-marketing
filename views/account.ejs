@@ -1,0 +1,175 @@
+<%- include('partials/head') %>
+
+<header class="page-head">
+  <div>
+    <div class="eyebrow">
+      <a href="/accounts">Accounts</a>
+      <span class="sep">/</span>
+      <span><%= account.name %></span>
+    </div>
+    <h1><%= account.name %></h1>
+    <p class="sub">
+      <span class="dot <%= tokenTail ? 'ok' : 'bad' %>"></span>
+      <%= tokenTail ? 'Buffer token configured' : 'No Buffer token' %>
+      · <%= account.link || 'no footer link' %>
+      · added <span data-date="<%= account.created_at %>">—</span>
+    </p>
+  </div>
+  <div class="head-actions">
+    <a class="btn" href="/accounts?edit=<%= account.id %>">
+      <svg class="ico" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-edit"/></svg>
+      Edit account
+    </a>
+    <a class="btn btn-primary" href="/accounts/<%= account.id %>/prompts">
+      Categories &amp; prompts
+      <svg class="ico" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><use href="#i-arrow-right"/></svg>
+    </a>
+  </div>
+</header>
+
+<section class="stats">
+  <div class="stat">
+    <div class="k">Generated</div>
+    <div class="v"><%= stats.generated %></div>
+    <div class="f">all time</div>
+  </div>
+  <div class="stat">
+    <div class="k">Success rate</div>
+    <div class="v"><%= stats.successRate %>%</div>
+    <div class="f"><%= stats.success %> posted · <%= stats.failed %> failed</div>
+  </div>
+  <div class="stat">
+    <div class="k">Pending</div>
+    <div class="v"><%= stats.pending %></div>
+    <div class="f">waiting on upload</div>
+  </div>
+  <div class="stat">
+    <div class="k">Categories</div>
+    <div class="v"><%= categories.length %></div>
+    <div class="f"><%= customCount %> custom prompt<%= customCount === 1 ? '' : 's' %></div>
+  </div>
+  <div class="stat">
+    <div class="k">Last post</div>
+    <div class="v" style="font-size:20px" data-rel="<%= stats.lastAt || '' %>"><%= stats.lastAt ? '' : '—' %></div>
+    <div class="f">newest generated video</div>
+  </div>
+</section>
+
+<div class="grid-2 even">
+  <section class="card">
+    <div class="card-head">
+      <h2>Latest videos</h2>
+      <a class="btn btn-sm btn-ghost" href="/videos?account=<%= account.id %>">All videos
+        <svg class="ico" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><use href="#i-arrow-right"/></svg>
+      </a>
+    </div>
+
+    <% if (!recent.length) { %>
+      <div class="empty">
+        <div class="empty-title">No videos for this account yet</div>
+        <div class="empty-hint">The rotation will pick this account up based on its position in the account list.</div>
+      </div>
+    <% } else { %>
+      <div class="list">
+        <% recent.forEach((v) => { %>
+          <div class="list-row">
+            <div class="grow">
+              <div class="list-title">
+                <span class="badge <%= v.status === 'success' ? 'ok' : v.status === 'failed' ? 'bad' : 'warn' %>"><span class="dot"></span><%= v.status %></span>
+                <span>#<%= v.id %></span>
+                <span class="muted small"><%= v.category_name || 'Uncategorized' %></span>
+                <% if (v.attempts > 1) { %><span class="faint small"><%= v.attempts %>× attempts</span><% } %>
+              </div>
+              <div class="list-sub"><%= v.hook || v.caption || '—' %></div>
+              <% if (v.last_error) { %>
+                <div class="list-sub" style="color:var(--bad);white-space:normal"><%= v.last_error %></div>
+              <% } %>
+            </div>
+            <div class="list-actions">
+              <% if (v.video_path) { %>
+                <a class="btn btn-sm" href="/videos/<%= v.video_path.split('/').pop() %>" target="_blank" rel="noopener">View</a>
+              <% } %>
+              <% if (v.status !== 'success') { %>
+                <button class="btn btn-sm" onclick="retryVideo(<%= v.id %>, this)">Retry</button>
+              <% } %>
+              <button class="btn btn-sm btn-ghost" title="Delete video" style="color:var(--bad)" onclick="deleteVideo(<%= v.id %>)">
+                <svg class="ico" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-trash"/></svg>
+              </button>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+
+  <div class="stack">
+    <section class="card">
+      <div class="card-head">
+        <h2>Profile</h2>
+        <span class="hint">SQLite record</span>
+      </div>
+      <div class="card-body">
+        <dl class="kv">
+          <dt>Account</dt><dd><%= account.name %></dd>
+          <dt>Footer link</dt><dd><%= account.link || '—' %></dd>
+          <dt>Buffer token</dt><dd class="mono">••••••••<%= tokenTail || ' (none)' %></dd>
+          <dt>Rotation slot</dt><dd><%= account.position + 1 %></dd>
+          <dt>Created</dt><dd data-date="<%= account.created_at %>">—</dd>
+        </dl>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Categories &amp; prompts</h2>
+        <a class="btn btn-sm btn-ghost" href="/accounts/<%= account.id %>/prompts">Manage</a>
+      </div>
+      <% if (!categories.length) { %>
+        <div class="empty">No categories mapped yet.</div>
+      <% } else { %>
+        <div class="list">
+          <% categories.forEach((c) => { %>
+            <div class="list-row" style="padding-top:10px;padding-bottom:10px">
+              <div class="grow">
+                <div class="list-title"><%= c.category_name %></div>
+                <div class="list-sub"><%= c.prompt && c.prompt.trim() ? 'custom prompt for this account' : 'using the category default prompt' %></div>
+              </div>
+              <span class="badge <%= c.prompt && c.prompt.trim() ? 'info' : 'plain' %>"><%= c.prompt && c.prompt.trim() ? 'custom' : 'default' %></span>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+  </div>
+</div>
+
+<script>
+async function retryVideo(id, btn) {
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    await UI.post('/api/videos/' + id + '/retry');
+    UI.toast('Retry finished', 'ok');
+    location.reload();
+  } catch (err) {
+    UI.toast(err.message, 'err');
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+}
+
+async function deleteVideo(id) {
+  const ok = await UI.confirm({ title: 'Delete video?', body: 'The rendered file and its database record are removed.', confirmLabel: 'Delete', danger: true });
+  if (!ok) return;
+  try {
+    await UI.del('/api/videos/' + id);
+    UI.toast('Video deleted', 'ok');
+    setTimeout(() => location.reload(), 400);
+  } catch (err) {
+    UI.toast(err.message, 'err');
+  }
+}
+</script>
+
+<%- include('partials/foot') %>

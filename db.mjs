@@ -259,6 +259,9 @@ export const store = {
   getVideo(id) {
     return db.prepare("SELECT * FROM videos WHERE id=?").get(id);
   },
+  countVideos() {
+    return db.prepare("SELECT COUNT(*) AS c FROM videos").get().c;
+  },
   createVideo(account, category, data) {
     const info = db.prepare(`
       INSERT INTO videos(account_id, category_id, account_name, category_name,

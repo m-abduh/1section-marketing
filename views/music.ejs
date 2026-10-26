@@ -1,0 +1,234 @@
+<%- include('partials/head') %>
+
+<header class="page-head">
+  <div>
+    <div class="eyebrow">Content · background audio</div>
+    <h1>Music</h1>
+    <p class="sub">Each render picks one track at random and cuts a 20-second fade-out clip for the background bed.</p>
+  </div>
+  <div class="head-actions">
+    <input type="file" id="music_file" accept="audio/*" multiple hidden onchange="onFilesPicked()">
+    <button class="btn" onclick="document.getElementById('music_file').click()">
+      <svg class="ico" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-upload"/></svg>
+      Choose files
+    </button>
+    <button class="btn btn-primary" id="uploadBtn" onclick="uploadMusic()">
+      <svg class="ico" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-upload"/></svg>
+      Upload
+    </button>
+  </div>
+</header>
+
+<section class="card">
+  <div class="card-head">
+    <h2>Tracks</h2>
+    <span class="hint" id="musicMeta">loading…</span>
+  </div>
+  <div id="musicBody">
+    <div class="empty">Loading library…</div>
+  </div>
+</section>
+
+<div class="modal-backdrop" id="renameModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Rename track</h3>
+      <p>Keep the audio extension so the renderer can still pick the file up.</p>
+    </div>
+    <div class="modal-body">
+      <label class="field">
+        <span class="lbl">File name</span>
+        <input class="input mono" type="text" id="rename_input">
+      </label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="UI.closeModal('renameModal')">Cancel</button>
+      <button class="btn btn-primary" id="rename_save" onclick="confirmRename()">Rename</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let musicFiles = [];
+let renameIndex = null;
+
+function renderMusic() {
+  const body = document.getElementById('musicBody');
+  const meta = document.getElementById('musicMeta');
+  meta.textContent = `${musicFiles.length} track${musicFiles.length === 1 ? '' : 's'} · ${UI.bytes(musicFiles.reduce((sum, f) => sum + (f.size || 0), 0))}`;
+
+  if (!musicFiles.length) {
+    body.innerHTML = `<div class="empty">
+      <div class="empty-title">No music yet</div>
+      <div class="empty-hint">Upload MP3/WAV/M4A tracks. The renderer randomly picks one per video.</div>
+      <button class="btn btn-primary" onclick="document.getElementById('music_file').click()">Upload a track</button>
+    </div>`;
+    return;
+  }
+
+  body.innerHTML = `<div class="table-wrap stackable">
+    <table class="data fixed">
+      <colgroup>
+        <col>
+        <col style="width:110px">
+        <col style="width:120px">
+        <col style="width:150px">
+        <col style="width:190px">
+      </colgroup>
+      <thead><tr>
+        <th>Track</th><th>Duration</th><th>Size</th><th>Modified</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${musicFiles.map((f, i) => `
+          <tr>
+            <td data-span="3">
+              <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                <span class="badge plain" style="padding:4px 6px">
+                  <svg class="ico" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-music"/></svg>
+                </span>
+                <div style="min-width:0">
+                  <div style="font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${UI.esc(f.name)}">${UI.esc(f.name)}</div>
+                  <div class="faint small">.${UI.esc((f.name.split('.').pop() || '').toLowerCase() || 'audio')}</div>
+                </div>
+              </div>
+            </td>
+            <td data-label="Duration" class="mono small">${UI.duration(f.duration)}</td>
+            <td data-label="Size" class="small muted nowrap">${UI.bytes(f.size)}</td>
+            <td data-label="Modified" class="small muted nowrap" data-rel="${new Date(f.mtime).toISOString()}">—</td>
+            <td class="actions" data-span="3">
+              <div class="row-actions">
+              <button class="btn btn-sm" onclick="togglePreview(${i}, this)" data-play="${i}">Play</button>
+              <button class="btn btn-sm btn-ghost" onclick="openRename(${i})">
+                <svg class="ico" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-edit"/></svg>
+              </button>
+              <button class="btn btn-sm btn-ghost" style="color:var(--bad)" onclick="deleteMusic(${i})">
+                <svg class="ico" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-trash"/></svg>
+              </button>
+              </div>
+              <audio id="audio-${i}" src="/music/${encodeURIComponent(f.name)}" preload="none" onended="resetPlay(${i})"></audio>
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+
+  UI.hydrateTimes(body);
+}
+
+function resetPlay(i) {
+  const btn = document.querySelector(`[data-play="${i}"]`);
+  if (btn) btn.textContent = 'Play';
+}
+
+function togglePreview(i) {
+  const audio = document.getElementById('audio-' + i);
+  const btn = document.querySelector(`[data-play="${i}"]`);
+  if (!audio || !btn) return;
+
+  if (audio.paused) {
+    document.querySelectorAll('audio').forEach((a) => { if (a !== audio) a.pause(); });
+    document.querySelectorAll('[data-play]').forEach((b) => { if (b !== btn) b.textContent = 'Play'; });
+    audio.play();
+    btn.textContent = 'Stop';
+  } else {
+    audio.pause();
+    btn.textContent = 'Play';
+  }
+}
+
+async function loadMusic() {
+  try {
+    musicFiles = await UI.api('/api/music');
+    renderMusic();
+  } catch (err) {
+    document.getElementById('musicBody').innerHTML = `<div class="empty">Could not load the library: ${UI.esc(err.message)}</div>`;
+  }
+}
+
+function onFilesPicked() {
+  const input = document.getElementById('music_file');
+  const count = input.files.length;
+  if (count) document.getElementById('uploadBtn').innerHTML =
+    `<svg class="ico" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-upload"/></svg> Upload ${count} file${count === 1 ? '' : 's'}`;
+}
+
+async function uploadMusic() {
+  const input = document.getElementById('music_file');
+  if (!input.files.length) return UI.toast('Choose audio files first', 'err');
+
+  const btn = document.getElementById('uploadBtn');
+  btn.disabled = true;
+  const original = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> Uploading…';
+
+  const form = new FormData();
+  Array.from(input.files).forEach((file) => form.append('files', file));
+
+  try {
+    const res = await fetch('/api/music/upload', { method: 'POST', body: form });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || res.statusText);
+    input.value = '';
+    btn.innerHTML = original;
+    UI.toast(`Uploaded ${data.files.length} track${data.files.length === 1 ? '' : 's'}`, 'ok');
+    await loadMusic();
+  } catch (err) {
+    UI.toast(err.message, 'err');
+    btn.innerHTML = original;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function openRename(i) {
+  const file = musicFiles[i];
+  if (!file) return;
+  renameIndex = i;
+  document.getElementById('rename_input').value = file.name;
+  UI.openModal('renameModal');
+  document.getElementById('rename_input').focus();
+}
+
+async function confirmRename() {
+  const file = musicFiles[renameIndex];
+  if (!file) return;
+  const name = document.getElementById('rename_input').value.trim();
+  if (!name || name === file.name) return UI.closeModal('renameModal');
+
+  const btn = document.getElementById('rename_save');
+  btn.disabled = true;
+  try {
+    await UI.api('/api/music/' + encodeURIComponent(file.name), { method: 'PUT', body: JSON.stringify({ name }) });
+    UI.closeModal('renameModal');
+    UI.toast('Track renamed', 'ok');
+    await loadMusic();
+  } catch (err) {
+    UI.toast(err.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function deleteMusic(i) {
+  const file = musicFiles[i];
+  if (!file) return;
+  const ok = await UI.confirm({
+    title: 'Delete track?',
+    body: `${file.name} will be removed from the music library.`,
+    confirmLabel: 'Delete track',
+    danger: true,
+  });
+  if (!ok) return;
+  try {
+    await UI.del('/api/music/' + encodeURIComponent(file.name));
+    UI.toast('Track deleted', 'ok');
+    await loadMusic();
+  } catch (err) {
+    UI.toast(err.message, 'err');
+  }
+}
+
+loadMusic();
+</script>
+
+<%- include('partials/foot') %>

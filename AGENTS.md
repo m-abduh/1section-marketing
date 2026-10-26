@@ -54,10 +54,23 @@ Arrow chains are auto-detected by `chainifyMarkdown()` and wrapped in a centered
 - `/api/generate` (POST) — run one pipeline slot now (used by the dashboard button)
 - `/api/analytics?days=30` (GET) — **read-only** dashboard analytics: Buffer `aggregatedPostMetrics` per account (posts, views, reactions, comments, engagement rate) + local DB stats (generated/success/failed, 14-day activity, category mix). Implemented in `services/analytics.mjs`; 5-min metric cache, 1-hour channel cache, accounts fetched with concurrency 4. Never writes state.
 - `/api/analytics/full?days=30` (GET) — **read-only** full analytics for the `/analytics` page. Per Buffer account: account/organization metadata, every channel, aggregated metrics (overall + per channel), and the latest 5 sent posts with every metric Buffer exposes. Also includes the latest 5 generated posts per account from SQLite (`content_json` parsed). Implemented in `services/analytics-full.mjs`; 5-min snapshot cache, 1-hour account/channel cache, 2 accounts in parallel. Never writes state.
-- Static: `/videos/*` (output dir), `/music/*`
+- Static: `/videos/*` (output dir), `/music/*`, `/css/*`, `/js/*` (shared dashboard assets in `public/`)
 
-## Dashboard (`views/index.ejs`)
-Single-file EJS dashboard (no frontend build): dark sidebar (overview/analytics nav, accounts, settings, categories, music) + light main area with KPI cards, 14-day activity bars, category mix and a per-account channel table (real Buffer metrics). Selecting an account opens a panel with Videos and Categories & prompts tabs (prompt accordions). All data flows through the REST API above; the UI never mutates state except through those endpoints.
+## Dashboard (`views/`)
+Multi-page EJS dashboard (no frontend build), one concern per page, shared shell in `views/partials/head.ejs` + `foot.ejs` and a single design system in `public/css/app.css` (+ `public/js/app.js` exposing the global `UI` namespace: `api`, `toast`, `confirm`, `generateNow`, formatters). Pages:
+- `/` (`overview.ejs`) — KPI row + 14-day activity + category mix + Buffer channel table (all from `/api/analytics`), recent videos and a read-only "next in rotation" card (`nextSlot()` preview).
+- `/accounts` (`accounts.ejs`) — account cards with per-account stats, add/edit modal, delete, ↑/↓ reorder (`/api/accounts/reorder`).
+- `/accounts/:id` (`account.ejs`) — profile, stats, latest videos, category prompt summary.
+- `/accounts/:id/prompts` (`prompts.ejs`) — per-account category prompt overrides (accordions, save / reset to default).
+- `/videos` (`videos.ejs`) — all videos with account/status filters, client-side search, view/retry/delete; newest 60 by default (`?limit=500` for all).
+- `/categories` (`categories.ejs`) — global categories + default prompts, override/video counts, CRUD.
+- `/settings` (`settings.ejs`) — cadence (videos/day, window, tz), base AI prompt, rotation + runtime info.
+- `/music` (`music.ejs`) — BGM library: upload, preview, rename, delete.
+- `/analytics` (`analytics.ejs`) — unchanged deep-dive page (own markup/CSS); only its sidebar links were widened.
+
+Server-side pages are read-only renders from the `store`; every mutation still goes through the REST API below. `views/index.ejs` was removed when the dashboard was split.
+
+The AI base prompt (`ai_base_prompt` setting) is editable on `/settings`; it is read by `services/openrouter.js` and falls back to `DEFAULT_BASE_PROMPT` when empty.
 
 ## Analytics page (`views/analytics.ejs`)
 English-language, read-only page at `/analytics` (linked from the sidebar). Loads `/api/analytics/full` client-side with 7/30/90-day ranges and renders: totals from all Buffer accounts, an account-comparison bar chart (views/reactions/comments/posts/engagement), then a collapsible section per account with Buffer metadata, channels, every aggregated metric, all per-channel metric values as cards, the latest 5 sent posts with every metric value as cards, and the latest 5 SQLite-generated posts as pretty JSON. Every account exposes a Markdown audit download (`accountMarkdown`) plus a global audit (`auditMarkdown`) with key values, channels, aggregated metrics, per-channel metric values, 5 latest posts and the 5 generated JSON records; JSON downloads remain available per account and for all accounts. Same Basic Auth gate as the rest of the dashboard.

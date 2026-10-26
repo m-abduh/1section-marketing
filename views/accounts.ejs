@@ -1,0 +1,190 @@
+<%- include('partials/head') %>
+
+<header class="page-head">
+  <div>
+    <div class="eyebrow">Content · <%= rows.length %> account<%= rows.length === 1 ? '' : 's' %></div>
+    <h1>Accounts</h1>
+    <p class="sub">Every Buffer account in the rotation. Each one owns its channels, its category prompts, and its posting history.</p>
+  </div>
+  <div class="head-actions">
+    <button class="btn btn-primary" onclick="openAccountModal()">
+      <svg class="ico" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-plus"/></svg>
+      Add account
+    </button>
+  </div>
+</header>
+
+<% if (!rows.length) { %>
+  <section class="card">
+    <div class="empty">
+      <div class="empty-title">No Buffer accounts yet</div>
+      <div class="empty-hint">Add your first account with its Buffer API token. The rotation uses account order to decide who posts next.</div>
+      <button class="btn btn-primary" onclick="openAccountModal()">Add account</button>
+    </div>
+  </section>
+<% } else { %>
+  <div class="grid-3">
+    <% rows.forEach((row, index) => { %>
+      <article class="card">
+        <div class="card-body">
+          <div class="row" style="gap:12px;flex-wrap:nowrap;align-items:flex-start">
+            <div class="avatar"><%= ((row.name.split('.').pop() || row.name).replace(/[^a-zA-Z0-9]/g, '').slice(0, 2) || '?').toUpperCase() %></div>
+            <div class="grow">
+              <div style="font-size:15px;font-weight:700;letter-spacing:-.02em"><%= row.name %></div>
+              <div class="small muted" style="margin-top:2px"><%= row.link || 'no link set' %></div>
+            </div>
+            <div class="row" style="gap:3px;flex-wrap:nowrap">
+              <button class="icon-btn" title="Move up" onclick="moveAccount(<%= row.id %>, -1)" <%= index === 0 ? 'disabled' : '' %>>
+                <svg class="ico" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(-90deg)"><use href="#i-chevron"/></svg>
+              </button>
+              <button class="icon-btn" title="Move down" onclick="moveAccount(<%= row.id %>, 1)" <%= index === rows.length - 1 ? 'disabled' : '' %>>
+                <svg class="ico" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(90deg)"><use href="#i-chevron"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="chips mt-14">
+            <span class="badge"><%= row.categoryCount %> categor<%= row.categoryCount === 1 ? 'y' : 'ies' %></span>
+            <span class="badge plain"><span class="dot <%= row.tokenTail ? 'ok' : 'bad' %>"></span>token ····<%= row.tokenTail || 'none' %></span>
+            <span class="badge plain">slot <%= index + 1 %></span>
+          </div>
+
+          <hr class="divider">
+
+          <div class="mini-stats">
+            <div><div class="k">Generated</div><div class="v"><%= row.stats.generated %></div></div>
+            <div><div class="k">Success</div><div class="v"><%= row.stats.success %></div></div>
+            <div><div class="k">Failed</div><div class="v"><%= row.stats.failed %></div></div>
+          </div>
+
+          <div class="row mt-14" style="justify-content:space-between">
+            <a class="btn btn-sm" href="/accounts/<%= row.id %>">Open account</a>
+            <div class="row" style="gap:6px">
+              <button class="btn btn-sm btn-ghost" onclick="openAccountModal(<%= row.id %>)">
+                <svg class="ico" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-edit"/></svg>
+                Edit
+              </button>
+              <button class="btn btn-sm btn-ghost" title="Delete account" style="color:var(--bad)" data-name="<%= row.name %>" onclick="deleteAccount(<%= row.id %>, this.dataset.name)">
+                <svg class="ico" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-trash"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </article>
+    <% }) %>
+  </div>
+<% } %>
+
+<div class="modal-backdrop" id="accountModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="accountModalTitle">Add Buffer account</h3>
+      <p>Credentials are stored in SQLite and used by the publishing pipeline.</p>
+    </div>
+    <div class="modal-body">
+      <label class="field">
+        <span class="lbl">Account name</span>
+        <input class="input" type="text" id="acc_name" placeholder="e.g. 1section.finance">
+      </label>
+      <label class="field">
+        <span class="lbl">Buffer API token</span>
+        <input class="input" type="text" id="acc_token" placeholder="buffer access token" autocomplete="off">
+        <span class="help">Fetched from the database when editing. Never rendered into the page HTML.</span>
+      </label>
+      <label class="field">
+        <span class="lbl">Link shown in the video footer</span>
+        <input class="input" type="text" id="acc_link" placeholder="e.g. finance.1section.com">
+      </label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="UI.closeModal('accountModal')">Cancel</button>
+      <button class="btn btn-primary" id="acc_save" onclick="saveAccount()">Save account</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const order = <%- JSON.stringify(rows.map((r) => r.id)) %>;
+let editingId = null;
+
+async function openAccountModal(id) {
+  editingId = id || null;
+  document.getElementById('accountModalTitle').textContent = id ? 'Edit Buffer account' : 'Add Buffer account';
+
+  const nameEl = document.getElementById('acc_name');
+  const tokenEl = document.getElementById('acc_token');
+  const linkEl = document.getElementById('acc_link');
+  nameEl.value = ''; tokenEl.value = ''; linkEl.value = '';
+
+  if (id) {
+    try {
+      const account = await UI.api('/api/accounts/' + id);
+      nameEl.value = account.name || '';
+      tokenEl.value = account.buffer_token || '';
+      linkEl.value = account.link || '';
+    } catch (err) {
+      UI.toast(err.message, 'err');
+      return;
+    }
+  }
+
+  UI.openModal('accountModal');
+  nameEl.focus();
+}
+
+async function saveAccount() {
+  const name = document.getElementById('acc_name').value.trim();
+  const token = document.getElementById('acc_token').value.trim();
+  const link = document.getElementById('acc_link').value.trim();
+  if (!name || !token) return UI.toast('Name and Buffer token are required', 'err');
+
+  const btn = document.getElementById('acc_save');
+  btn.disabled = true;
+  try {
+    if (editingId) await UI.put('/api/accounts/' + editingId, { name, buffer_token: token, link });
+    else await UI.post('/api/accounts', { name, buffer_token: token, link });
+    UI.toast(editingId ? 'Account updated' : 'Account added', 'ok');
+    setTimeout(() => location.reload(), 500);
+  } catch (err) {
+    UI.toast(err.message, 'err');
+    btn.disabled = false;
+  }
+}
+
+async function deleteAccount(id, name) {
+  const ok = await UI.confirm({
+    title: 'Delete account?',
+    body: `${name} and its local video history will be removed. Buffer itself is not touched.`,
+    confirmLabel: 'Delete account',
+    danger: true,
+  });
+  if (!ok) return;
+  try {
+    await UI.del('/api/accounts/' + id);
+    UI.toast('Account deleted', 'ok');
+    setTimeout(() => location.reload(), 400);
+  } catch (err) {
+    UI.toast(err.message, 'err');
+  }
+}
+
+async function moveAccount(id, direction) {
+  const ids = order.slice();
+  const from = ids.indexOf(id);
+  const to = from + direction;
+  if (from < 0 || to < 0 || to >= ids.length) return;
+  ids.splice(to, 0, ids.splice(from, 1)[0]);
+  try {
+    await UI.post('/api/accounts/reorder', { ids });
+    location.reload();
+  } catch (err) {
+    UI.toast(err.message, 'err');
+  }
+}
+
+// Deep link from other pages: /accounts?edit=3 opens the editor directly.
+const editParam = new URLSearchParams(location.search).get('edit');
+if (editParam) openAccountModal(Number(editParam));
+</script>
+
+<%- include('partials/foot') %>

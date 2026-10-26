@@ -1,0 +1,178 @@
+<%- include('partials/head') %>
+<%
+  const filterHref = (nextStatus, nextLimit) => {
+    const params = new URLSearchParams();
+    if (accountId) params.set('account', accountId);
+    if (nextStatus) params.set('status', nextStatus);
+    if (nextLimit) params.set('limit', nextLimit);
+    const qs = params.toString();
+    return '/videos' + (qs ? '?' + qs : '');
+  };
+  const accountName = (id) => (accounts.find((a) => a.id === id) || {}).name || '—';
+%>
+
+<header class="page-head">
+  <div>
+    <div class="eyebrow">Content · <%= statusCounts.all %> total · <%= statusCounts.failed %> failed</div>
+    <h1>Videos</h1>
+    <p class="sub">Every generated post with its render status, the account and category it belongs to, and the raw caption.</p>
+  </div>
+  <div class="head-actions">
+    <button class="btn" onclick="location.reload()">
+      <svg class="ico" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-refresh"/></svg>
+      Refresh
+    </button>
+    <button class="btn btn-primary" onclick="UI.generateNow(this)">
+      <svg class="ico" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><use href="#i-play"/></svg>
+      Generate post
+    </button>
+  </div>
+</header>
+
+<section class="card">
+  <div class="card-head">
+    <div class="filters">
+      <div class="segmented">
+        <a href="<%= filterHref('') %>" class="<%= !status ? 'on' : '' %>">All <span class="faint"><%= statusCounts.all %></span></a>
+        <a href="<%= filterHref('success') %>" class="<%= status === 'success' ? 'on' : '' %>">Posted <span class="faint"><%= statusCounts.success %></span></a>
+        <a href="<%= filterHref('failed') %>" class="<%= status === 'failed' ? 'on' : '' %>">Failed <span class="faint"><%= statusCounts.failed %></span></a>
+        <a href="<%= filterHref('pending') %>" class="<%= status === 'pending' ? 'on' : '' %>">Pending <span class="faint"><%= statusCounts.pending %></span></a>
+      </div>
+
+      <form method="get" action="/videos" class="row" style="gap:8px">
+        <% if (status) { %><input type="hidden" name="status" value="<%= status %>"><% } %>
+        <select class="select" name="account" style="width:auto;min-width:190px" onchange="this.form.submit()">
+          <option value="">All accounts</option>
+          <% accounts.forEach((a) => { %>
+            <option value="<%= a.id %>" <%= accountId === a.id ? 'selected' : '' %>><%= a.name %></option>
+          <% }) %>
+        </select>
+      </form>
+
+      <label class="search">
+        <svg class="ico" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><use href="#i-search"/></svg>
+        <input class="input" id="videoSearch" type="search" placeholder="Search hook, caption, account…">
+      </label>
+    </div>
+  </div>
+
+  <% if (!videos.length) { %>
+    <div class="empty">
+      <div class="empty-title">No videos match this view</div>
+      <div class="empty-hint">Try another account or status filter, or run a generation to create a new post.</div>
+      <button class="btn btn-primary" onclick="UI.generateNow(this)">Generate post</button>
+    </div>
+  <% } else { %>
+    <div class="table-wrap stackable">
+      <table class="data fixed" id="videoTable">
+        <colgroup>
+          <col style="width:100px">
+          <col style="width:88px">
+          <col style="width:200px">
+          <col>
+          <col style="width:96px">
+          <col style="width:54px">
+          <col style="width:168px">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Video</th>
+            <th>Account</th>
+            <th>Hook / caption</th>
+            <th>Created</th>
+            <th class="num">Tries</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% videos.forEach((v) => { %>
+            <tr data-search="<%= [v.id, v.account_name, v.category_name, v.hook, v.caption].join(' ').toLowerCase() %>">
+              <td data-label="Status">
+                <span class="badge <%= v.status === 'success' ? 'ok' : v.status === 'failed' ? 'bad' : 'warn' %>"><span class="dot"></span><%= v.status %></span>
+              </td>
+              <td data-label="Video" class="nowrap">
+                <div style="font-weight:650">#<%= v.id %></div>
+                <div class="faint small"><%= v.category_name || 'uncategorized' %></div>
+              </td>
+              <td data-label="Account" class="nowrap" data-span="2">
+                <div class="clip"><a class="link-quiet" href="/accounts/<%= v.account_id %>"><%= v.account_name || accountName(v.account_id) %></a></div>
+              </td>
+              <td data-label="Hook" data-span="2">
+                <div class="clip" style="font-size:12.5px;color:var(--ink-2)" title="<%= v.hook || v.caption || '' %>">
+                  <%= v.hook || v.caption || '—' %>
+                </div>
+                <% if (v.last_error) { %>
+                  <div class="clip small" style="color:var(--bad);margin-top:3px" title="<%= v.last_error %>"><%= v.last_error %></div>
+                <% } %>
+              </td>
+              <td data-label="Created" class="nowrap small muted" data-rel="<%= v.created_at %>">—</td>
+              <td class="num" data-label="Tries"><%= v.attempts %></td>
+              <td class="actions" data-span="2">
+                <div class="row-actions">
+                <% if (v.video_path) { %>
+                  <a class="btn btn-sm" href="/videos/<%= v.video_path.split('/').pop() %>" target="_blank" rel="noopener">View</a>
+                <% } %>
+                <% if (v.status !== 'success') { %>
+                  <button class="btn btn-sm" onclick="retryVideo(<%= v.id %>, this)">Retry</button>
+                <% } %>
+                <button class="btn btn-sm btn-ghost" title="Delete video" style="color:var(--bad)" onclick="deleteVideo(<%= v.id %>)">
+                  <svg class="ico" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-trash"/></svg>
+                </button>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+
+  <% if (videos.length && total > videos.length) { %>
+    <div class="card-body tight" style="border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <span class="small muted">Showing the newest <%= videos.length %> of <%= total %> videos.</span>
+      <a class="btn btn-sm" href="<%= filterHref(status, 500) %>">Show all</a>
+    </div>
+  <% } %>
+</section>
+
+<script>
+const search = document.getElementById('videoSearch');
+if (search) {
+  search.addEventListener('input', () => {
+    const term = search.value.trim().toLowerCase();
+    document.querySelectorAll('#videoTable tbody tr').forEach((row) => {
+      row.style.display = !term || row.dataset.search.includes(term) ? '' : 'none';
+    });
+  });
+}
+
+async function retryVideo(id, btn) {
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    await UI.post('/api/videos/' + id + '/retry');
+    UI.toast('Retry finished', 'ok');
+    setTimeout(() => location.reload(), 500);
+  } catch (err) {
+    UI.toast(err.message, 'err');
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+}
+
+async function deleteVideo(id) {
+  const ok = await UI.confirm({ title: 'Delete video?', body: 'The rendered file and its database record are removed.', confirmLabel: 'Delete', danger: true });
+  if (!ok) return;
+  try {
+    await UI.del('/api/videos/' + id);
+    UI.toast('Video deleted', 'ok');
+    setTimeout(() => location.reload(), 400);
+  } catch (err) {
+    UI.toast(err.message, 'err');
+  }
+}
+</script>
+
+<%- include('partials/foot') %>
