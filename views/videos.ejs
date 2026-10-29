@@ -9,6 +9,7 @@
     return '/videos' + (qs ? '?' + qs : '');
   };
   const accountName = (id) => (accounts.find((a) => a.id === id) || {}).name || '—';
+  const statusBadge = (s) => (s === 'success' ? 'ok' : s === 'failed' ? 'bad' : s === 'ready' ? 'info' : 'warn');
 %>
 
 <header class="page-head">
@@ -35,6 +36,7 @@
       <div class="segmented">
         <a href="<%= filterHref('') %>" class="<%= !status ? 'on' : '' %>">All <span class="faint"><%= statusCounts.all %></span></a>
         <a href="<%= filterHref('success') %>" class="<%= status === 'success' ? 'on' : '' %>">Posted <span class="faint"><%= statusCounts.success %></span></a>
+        <a href="<%= filterHref('ready') %>" class="<%= status === 'ready' ? 'on' : '' %>">Ready <span class="faint"><%= statusCounts.ready %></span></a>
         <a href="<%= filterHref('failed') %>" class="<%= status === 'failed' ? 'on' : '' %>">Failed <span class="faint"><%= statusCounts.failed %></span></a>
         <a href="<%= filterHref('pending') %>" class="<%= status === 'pending' ? 'on' : '' %>">Pending <span class="faint"><%= statusCounts.pending %></span></a>
       </div>
@@ -89,7 +91,7 @@
           <% videos.forEach((v) => { %>
             <tr data-search="<%= [v.id, v.account_name, v.category_name, v.hook, v.caption].join(' ').toLowerCase() %>">
               <td data-label="Status">
-                <span class="badge <%= v.status === 'success' ? 'ok' : v.status === 'failed' ? 'bad' : 'warn' %>"><span class="dot"></span><%= v.status %></span>
+                <span class="badge <%= statusBadge(v.status) %>"><span class="dot"></span><%= v.status %></span>
               </td>
               <td data-label="Video" class="nowrap">
                 <div style="font-weight:650">#<%= v.id %></div>
@@ -152,9 +154,16 @@ async function retryVideo(id, btn) {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>';
   try {
-    await UI.post('/api/videos/' + id + '/retry');
-    UI.toast('Retry finished', 'ok');
-    setTimeout(() => location.reload(), 500);
+    const res = await UI.post('/api/videos/' + id + '/retry');
+    const status = res?.result?.status || res?.status;
+    if (status === 'ready') {
+      UI.toast('Publishing is paused — video stays ready', 'ok');
+    } else if (res?.result?.error) {
+      UI.toast(res.result.error, 'err');
+    } else {
+      UI.toast('Retry finished', 'ok');
+    }
+    setTimeout(() => location.reload(), 600);
   } catch (err) {
     UI.toast(err.message, 'err');
     btn.disabled = false;

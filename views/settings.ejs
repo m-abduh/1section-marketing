@@ -18,6 +18,33 @@
   <div class="stack">
     <section class="card">
       <div class="card-head">
+        <h2>Publishing</h2>
+        <span class="badge <%= config.publish_enabled ? 'ok' : 'warn' %>"><span class="dot"></span><%= config.publish_enabled ? 'Live' : 'Paused' %></span>
+      </div>
+      <div class="card-body">
+        <div class="row" style="gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap">
+          <div style="flex:1;min-width:220px">
+            <div style="font-weight:700;font-size:14px">Publish to Buffer</div>
+            <p class="small muted" style="margin-top:4px;line-height:1.6">
+              When off, the pipeline still writes the AI post and renders the video, but stops before uploading.
+              New videos stay in <span class="badge info">ready</span> until you turn publishing back on and retry them.
+            </p>
+          </div>
+          <label class="switch" title="Toggle Buffer publishing">
+            <input type="checkbox" id="set_publish" <%= config.publish_enabled ? 'checked' : '' %> onchange="savePublish(this)">
+            <span class="track"></span>
+            <span class="switch-label" id="publishLabel"><%= config.publish_enabled ? 'On' : 'Off' %></span>
+          </label>
+        </div>
+        <div class="row mt-14" style="gap:8px">
+          <span class="faint small">Pipeline:</span>
+          <span class="badge plain"><%= config.publish_enabled ? 'generate → render → publish' : 'generate → render only' %></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
         <h2>Posting cadence</h2>
         <span class="hint"><%= settings.schedules.length ? settings.schedules.length + ' slots / day' : 'scheduler off' %></span>
       </div>
@@ -152,6 +179,23 @@
 </datalist>
 
 <script>
+async function savePublish(input) {
+  const on = input.checked;
+  input.disabled = true;
+  try {
+    await UI.put('/api/settings', { publish_enabled: on });
+    const label = document.getElementById('publishLabel');
+    if (label) label.textContent = on ? 'On' : 'Off';
+    UI.toast(on ? 'Publishing enabled — new videos will post to Buffer' : 'Publishing paused — videos will only be rendered', 'ok');
+    setTimeout(() => location.reload(), 700);
+  } catch (err) {
+    input.checked = !on;
+    UI.toast(err.message, 'err');
+  } finally {
+    input.disabled = false;
+  }
+}
+
 async function saveCadence() {
   const btn = document.getElementById('saveCadence');
   btn.disabled = true;

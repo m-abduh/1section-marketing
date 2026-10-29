@@ -96,9 +96,10 @@ async function generateAndPost(video, { account, categoryName, prompt, position 
 
   const contentChecksum = gen.content.trim();
 
-  // Dedupe: skip if exactly the same content was already posted for this account
+  // Dedupe: skip if exactly the same content was already posted (or already
+  // rendered and waiting to be published) for this account.
   const dup = store.listVideos({ accountId: account.id }).find(
-    (v) => v.status === "success" && v.content && v.content.trim() === contentChecksum
+    (v) => ["success", "ready"].includes(v.status) && v.content && v.content.trim() === contentChecksum
   );
   if (dup) {
     store.deleteVideo(video.id);
@@ -119,10 +120,25 @@ async function generateAndPost(video, { account, categoryName, prompt, position 
   );
   video = store.updateVideo(video.id, { video_path: videoPath });
 
+  // Publishing off: the AI + renderer still ran, so keep the finished file and
+  // mark it ready. A manual retry can publish it later without re-rendering.
+  if (!store.isPublishingEnabled()) {
+    video = store.updateVideo(video.id, { status: "ready", posted_at: null, last_error: null });
+    console.log(`[pipeline] Publishing disabled; video #${video.id} rendered and left ready`);
+    return { status: "ready", published: false };
+  }
+
   return uploadWithRetry(video);
 }
 
 async function uploadWithRetry(video) {
+  // Guard the manual-retry path too: toggling publishing off must never leave a
+  // rendered video marked as failed just because delivery is paused.
+  if (!store.isPublishingEnabled()) {
+    video = store.updateVideo(video.id, { status: "ready", last_error: null });
+    return { status: "ready", published: false, skipped: true };
+  }
+
   const account = store.getAccount(video.account_id);
   const token = account.buffer_token;
   const publicUrl = process.env.PUBLIC_URL;
@@ -163,6 +179,12 @@ async function uploadWithRetry(video) {
     console.error(`[pipeline] upload failed: ${err.message}`);
   }
 
+  // Publishing may have been switched off while the upload was retrying.
+  if (!store.isPublishingEnabled()) {
+    video = store.updateVideo(video.id, { status: "ready", last_error: null });
+    return { status: "ready", published: false, skipped: true };
+  }
+
   video = store.updateVideo(video.id, { status: "failed", last_error: lastErr });
   return { status: "failed", error: lastErr };
 }
@@ -178,6 +200,12 @@ export async function runManualRetry(videoId) {
   // If a video file was never rendered (failed earlier), re-run the whole slot content.
   if (!video.video_path) {
     return runPipeline({});
+  }
+
+  // Retry is a publish action. When publishing is paused, leave the rendered
+  // file untouched instead of flipping it to pending/failed.
+  if (!store.isPublishingEnabled()) {
+    return { status: "ready", skipped: true, reason: "publishing disabled" };
   }
 
   video = store.updateVideo(video.id, { status: "pending", last_error: null });

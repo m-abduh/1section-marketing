@@ -1,3 +1,4 @@
+<% const publishingOn = locals.publishEnabled !== false; %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -88,10 +89,10 @@
       </div>
     </div>
 
-    <div class="rail-foot">
-      <span class="dot ok"></span>
-      <span>Pipeline online</span>
-    </div>
+    <a class="rail-foot" href="/settings" title="<%= publishingOn ? 'Publishing to Buffer is on' : 'Publishing is paused — videos are rendered only' %>">
+      <span class="dot <%= publishingOn ? 'ok' : 'warn' %>"></span>
+      <span><%= publishingOn ? 'Publishing on' : 'Publishing off' %></span>
+    </a>
   </aside>
 
   <main class="main">

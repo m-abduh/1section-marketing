@@ -19,17 +19,19 @@ Each scheduled run posts **one** (account, category) pair, advancing like a flat
 `acc1:cat1 → acc2:cat1 → … → accN:cat1 → acc1:cat2 → acc2:cat2 → …` then resets.
 - Implemented via a saved `rotation` setting `{contentIndex, accountIndex}` in `scheduler/pipeline` (`pipeline.js` `nextSlot()` + the advance logic in `runPipeline`).
 - Category per account is picked as `account_categories[contentIndex % len]`; account as `accounts[accountIndex % len]`.
-- Posts are **deduped** per account (same trimmed content already posted = skipped).
+- Posts are **deduped** per account (same trimmed content already posted or rendered-and-ready = skipped).
 
 ## Data model (`db.mjs` → SQLite)
-- `settings` — key/value: `rotation`, `videos_per_day`, `tz`, `window_start`, `window_end`, etc.
+- `settings` — key/value: `rotation`, `videos_per_day`, `tz`, `window_start`, `window_end`, `publish_enabled`, etc.
 - `accounts` — name + `buffer_token` + position (rotation order).
 - `categories` — global list: name + `default_prompt`.
 - `account_categories` — per-account instance of a category: `prompt` (per-account override, falls back to category `default_prompt`), position. THIS is what drives what content each account posts.
-- `videos` — one row per generated post: account/category, `hook`, `content`, `caption`, `content_json`, `video_path`, `status` (pending/success/failed), `attempts`, `last_error`. Persisted so captions/content survive failures.
+- `videos` — one row per generated post: account/category, `hook`, `content`, `caption`, `content_json`, `video_path`, `status` (`pending`/`ready`/`success`/`failed`), `attempts`, `last_error`. `ready` means the file is rendered but not published. Persisted so captions/content survive failures.
 
 ## Pipeline flow (`pipeline.js`)
-`nextSlot()` picks account+category → `generatePost` (OpenRouter) returns `{hook, content, caption, content_json}` → dedupe check → `generateVideo` (unified template) → `uploadWithRetry` (Buffer, up to `RETRY_ATTEMPTS`=3 with `RETRY_DELAY_MS` backoff) → video row `success`/`failed`. Manual retry via `/api/videos/:id/retry` re-uploads an existing rendered file (or re-runs the slot if never rendered).
+`nextSlot()` picks account+category → `generatePost` (OpenRouter) returns `{hook, content, caption, content_json}` → dedupe check → `generateVideo` (unified template) → `uploadWithRetry` (Buffer, up to `RETRY_ATTEMPTS`=3 with `RETRY_DELAY_MS` backoff) → video row `success`/`ready`/`failed`. Manual retry via `/api/videos/:id/retry` re-uploads an existing rendered file (or re-runs the slot if never rendered).
+
+**Publishing switch.** `settings.publish_enabled` (default `1`) is the master Buffer delivery switch. When `0`, `generateAndPost` still runs the AI and renderer but stops before Buffer: the row is saved as `ready` with `posted_at` NULL and `attempts` 0, and the rotation still advances. `uploadWithRetry` and `runManualRetry` also respect the switch, so retrying a `ready` video while publishing is off leaves it untouched. When publishing is turned back on, Retry on a `ready` row uploads the existing file without re-rendering. Dedupe treats `ready` and `success` as already-used content.
 
 ## Builder / render pipeline
 - **`builder/unified.html` is the ONLY template** (all 12 old per-type templates were removed: stat, steps, compare, mythfact, quote, QnA, story, tips, formula, tierlist, checklist, warning). Do NOT recreate per-type templates.
@@ -50,9 +52,9 @@ Arrow chains are auto-detected by `chainifyMarkdown()` and wrapped in a centered
 - `/api/accounts` (GET/POST/PUT/DELETE, `/reorder`), `/api/categories` (CRUD)
 - `/api/accounts/:id/categories` (GET list; PUT full-replace mapping; `/…/:categoryId/prompt` to set a prompt)
 - `/api/videos` (list by `?account_id=`), `/api/videos/:id/retry`, `/api/videos/:id` (DELETE)
-- `/api/settings` (GET/PUT) — `videos_per_day`, `window_start`, `window_end`, `tz`
+- `/api/settings` (GET/PUT) — `videos_per_day`, `window_start`, `window_end`, `tz`, `publish_enabled`
 - `/api/generate` (POST) — run one pipeline slot now (used by the dashboard button)
-- `/api/analytics?days=30` (GET) — **read-only** dashboard analytics: Buffer `aggregatedPostMetrics` per account (posts, views, reactions, comments, engagement rate) + local DB stats (generated/success/failed, 14-day activity, category mix). Implemented in `services/analytics.mjs`; 5-min metric cache, 1-hour channel cache, accounts fetched with concurrency 4. Never writes state.
+- `/api/analytics?days=30` (GET) — **read-only** dashboard analytics: Buffer `aggregatedPostMetrics` per account (posts, views, reactions, comments, engagement rate) + local DB stats (generated/posted/ready/failed, 14-day activity, category mix). Implemented in `services/analytics.mjs`; 5-min metric cache, 1-hour channel cache, accounts fetched with concurrency 4. Never writes state.
 - `/api/analytics/full?days=30` (GET) — **read-only** full analytics for the `/analytics` page. Per Buffer account: account/organization metadata, every channel, aggregated metrics (overall + per channel), and the latest 5 sent posts with every metric Buffer exposes. Also includes the latest 5 generated posts per account from SQLite (`content_json` parsed). Implemented in `services/analytics-full.mjs`; 5-min snapshot cache, 1-hour account/channel cache, 2 accounts in parallel. Never writes state.
 - Static: `/videos/*` (output dir), `/music/*`, `/css/*`, `/js/*` (shared dashboard assets in `public/`)
 
@@ -62,9 +64,9 @@ Multi-page EJS dashboard (no frontend build), one concern per page, shared shell
 - `/accounts` (`accounts.ejs`) — account cards with per-account stats, add/edit modal, delete, ↑/↓ reorder (`/api/accounts/reorder`).
 - `/accounts/:id` (`account.ejs`) — profile, stats, latest videos, category prompt summary.
 - `/accounts/:id/prompts` (`prompts.ejs`) — per-account category prompt overrides (accordions, save / reset to default).
-- `/videos` (`videos.ejs`) — all videos with account/status filters, client-side search, view/retry/delete; newest 60 by default (`?limit=500` for all).
+- `/videos` (`videos.ejs`) — all videos with account/status filters (Posted / Ready / Failed / Pending), client-side search, view/retry/delete; newest 60 by default (`?limit=500` for all).
 - `/categories` (`categories.ejs`) — global categories + default prompts, override/video counts, CRUD.
-- `/settings` (`settings.ejs`) — cadence (videos/day, window, tz), base AI prompt, rotation + runtime info.
+- `/settings` (`settings.ejs`) — publishing on/off switch, cadence (videos/day, window, tz), base AI prompt, rotation + runtime info. The sidebar footer mirrors the publishing state and links here.
 - `/music` (`music.ejs`) — BGM library: upload, preview, rename, delete.
 - `/analytics` (`analytics.ejs`) — unchanged deep-dive page (own markup/CSS); only its sidebar links were widened.
 
