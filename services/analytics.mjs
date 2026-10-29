@@ -128,11 +128,12 @@ function localStats(videos) {
   for (const v of videos) {
     let s = perAccount.get(v.account_id);
     if (!s) {
-      s = { generated: 0, success: 0, failed: 0, pending: 0, lastAt: null };
+      s = { generated: 0, success: 0, ready: 0, failed: 0, pending: 0, lastAt: null };
       perAccount.set(v.account_id, s);
     }
     s.generated++;
     if (v.status === "success") s.success++;
+    else if (v.status === "ready") s.ready++;
     else if (v.status === "failed") s.failed++;
     else s.pending++;
     if (!s.lastAt || String(v.created_at) > String(s.lastAt)) s.lastAt = v.created_at;
@@ -163,7 +164,7 @@ export async function getAnalytics(days = 30) {
 
   const rows = accounts.map((a, i) => {
     const b = buffer[i];
-    const l = local.perAccount.get(a.id) || { generated: 0, success: 0, failed: 0, pending: 0, lastAt: null };
+    const l = local.perAccount.get(a.id) || { generated: 0, success: 0, ready: 0, failed: 0, pending: 0, lastAt: null };
     return { ...b, local: l };
   });
 
@@ -175,11 +176,12 @@ export async function getAnalytics(days = 30) {
       t.comments += r.metrics.comments;
       t.generated += r.local.generated;
       t.success += r.local.success;
+      t.ready += r.local.ready;
       t.failed += r.local.failed;
       t.pending += r.local.pending;
       return t;
     },
-    { posts: 0, views: 0, reactions: 0, comments: 0, generated: 0, success: 0, failed: 0, pending: 0 }
+    { posts: 0, views: 0, reactions: 0, comments: 0, generated: 0, success: 0, ready: 0, failed: 0, pending: 0 }
   );
   totals.engagementRate = totals.views
     ? Math.round((totals.reactions / totals.views) * 10000) / 100

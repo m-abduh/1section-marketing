@@ -36,12 +36,12 @@
   <div class="stat">
     <div class="k">Success rate</div>
     <div class="v"><%= stats.successRate %>%</div>
-    <div class="f"><%= stats.success %> posted · <%= stats.failed %> failed</div>
+    <div class="f"><%= stats.success %> posted · <%= stats.ready %> ready · <%= stats.failed %> failed</div>
   </div>
   <div class="stat">
-    <div class="k">Pending</div>
-    <div class="v"><%= stats.pending %></div>
-    <div class="f">waiting on upload</div>
+    <div class="k">Ready</div>
+    <div class="v"><%= stats.ready %></div>
+    <div class="f">rendered · not published</div>
   </div>
   <div class="stat">
     <div class="k">Categories</div>
@@ -75,7 +75,7 @@
           <div class="list-row">
             <div class="grow">
               <div class="list-title">
-                <span class="badge <%= v.status === 'success' ? 'ok' : v.status === 'failed' ? 'bad' : 'warn' %>"><span class="dot"></span><%= v.status %></span>
+                <span class="badge <%= v.status === 'success' ? 'ok' : v.status === 'failed' ? 'bad' : v.status === 'ready' ? 'info' : 'warn' %>"><span class="dot"></span><%= v.status %></span>
                 <span>#<%= v.id %></span>
                 <span class="muted small"><%= v.category_name || 'Uncategorized' %></span>
                 <% if (v.attempts > 1) { %><span class="faint small"><%= v.attempts %>× attempts</span><% } %>

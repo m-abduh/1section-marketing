@@ -156,9 +156,10 @@ function mergeMetrics(metricSets) {
 
 function localSnapshot(account, videos) {
   const mine = videos.filter((v) => v.account_id === account.id);
-  const stats = { generated: mine.length, success: 0, failed: 0, pending: 0, lastAt: null };
+  const stats = { generated: mine.length, success: 0, ready: 0, failed: 0, pending: 0, lastAt: null };
   for (const v of mine) {
     if (v.status === "success") stats.success++;
+    else if (v.status === "ready") stats.ready++;
     else if (v.status === "failed") stats.failed++;
     else stats.pending++;
     if (!stats.lastAt || String(v.created_at) > String(stats.lastAt)) stats.lastAt = v.created_at;
@@ -334,11 +335,12 @@ export async function getFullAnalytics(days = 30, { refresh = false } = {}) {
         const l = r.local?.stats || {};
         t.generated += l.generated || 0;
         t.success += l.success || 0;
+        t.ready += l.ready || 0;
         t.failed += l.failed || 0;
         t.pending += l.pending || 0;
         return t;
       },
-      { generated: 0, success: 0, failed: 0, pending: 0 }
+      { generated: 0, success: 0, ready: 0, failed: 0, pending: 0 }
     ),
   };
   totals.local.successRate = totals.local.generated

@@ -214,6 +214,8 @@
 
       if (video && video.status === "success") {
         UI.toast(`Video #${video.id} generated and posted`, "ok");
+      } else if (video && video.status === "ready") {
+        UI.toast(`Video #${video.id} rendered — publishing is off`, "ok");
       } else if (video && video.status === "failed") {
         UI.toast(`Rendered but upload failed: ${(video.last_error || "unknown error").slice(0, 160)}`, "err");
       } else if (res.result && res.result.error) {

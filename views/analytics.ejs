@@ -274,7 +274,7 @@ function renderKpis(){
       fmtMetric(m),
       m.type === "postCount" ? `${d.range.days}-day range` : (m.type === "engagementRate" ? "Reactions ÷ views" : "Buffer aggregated")
     )),
-    kpi("Generated locally", fmt(local.generated), `${fmt(local.success)} success · ${fmt(local.pending)} pending`),
+    kpi("Generated locally", fmt(local.generated), `${fmt(local.success)} posted · ${fmt(local.ready)} ready · ${fmt(local.pending)} pending`),
     kpi("Local success rate", `${fmt(local.successRate)}%`, `${fmt(local.failed)} failed`),
   ];
 
@@ -591,6 +591,7 @@ function accountMarkdown(a){
   for (const m of metrics) lines.push(`| ${mdCell(m.name || m.type)} | ${fmtMetric(m)} |`);
   lines.push(`| Generated local | ${local.generated ?? 0} |`);
   lines.push(`| Local success | ${local.success ?? 0} |`);
+  lines.push(`| Local ready | ${local.ready ?? 0} |`);
   lines.push(`| Local failed | ${local.failed ?? 0} |`);
   lines.push(`| Local pending | ${local.pending ?? 0} |`);
   if (local.lastAt) lines.push(`| Last generated | ${mdCell(shortDateTime(local.lastAt))} |`);
@@ -691,7 +692,7 @@ function auditMarkdown(){
   lines.push(`- **Organizations:** ${d.summary.organizations}`);
   lines.push(`- **Channels:** ${d.summary.channels}`);
   for (const m of d.totals.buffer || []) lines.push(`- **${mdCell(m.name || m.type)}:** ${fmtMetric(m)}`);
-  lines.push(`- **Generated local:** ${local.generated} (${local.success} success · ${local.failed} failed · ${local.pending} pending)`);
+  lines.push(`- **Generated local:** ${local.generated} (${local.success} success · ${local.ready ?? 0} ready · ${local.failed} failed · ${local.pending} pending)`);
   lines.push("");
   lines.push("## Account overview");
   lines.push("");

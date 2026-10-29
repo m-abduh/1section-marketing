@@ -118,9 +118,10 @@ function navCounts() {
 }
 
 function videoStats(videos) {
-  const stats = { generated: videos.length, success: 0, failed: 0, pending: 0, lastAt: null, successRate: 0 };
+  const stats = { generated: videos.length, success: 0, ready: 0, failed: 0, pending: 0, lastAt: null, successRate: 0 };
   for (const v of videos) {
     if (v.status === "success") stats.success++;
+    else if (v.status === "ready") stats.ready++;
     else if (v.status === "failed") stats.failed++;
     else stats.pending++;
     if (v.created_at && (!stats.lastAt || v.created_at > stats.lastAt)) stats.lastAt = v.created_at;
@@ -145,7 +146,7 @@ function nextUp() {
 }
 
 function page(active, title, extra = {}) {
-  return { active, title, counts: navCounts(), ...extra };
+  return { active, title, counts: navCounts(), publishEnabled: store.isPublishingEnabled(), ...extra };
 }
 
 function renderMissing(res) {
@@ -213,7 +214,7 @@ app.get("/accounts/:id/prompts", (req, res) => {
 
 app.get("/videos", (req, res) => {
   const accountId = Number(req.query.account) || null;
-  const status = ["success", "failed", "pending"].includes(String(req.query.status)) ? String(req.query.status) : "";
+  const status = ["success", "ready", "failed", "pending"].includes(String(req.query.status)) ? String(req.query.status) : "";
   const limit = Math.min(500, Math.max(20, Number(req.query.limit) || 60));
   const all = store.listVideos(accountId ? { accountId } : undefined);
   const filtered = status ? all.filter((v) => v.status === status) : all;
@@ -228,6 +229,7 @@ app.get("/videos", (req, res) => {
     statusCounts: {
       all: all.length,
       success: all.filter((v) => v.status === "success").length,
+      ready: all.filter((v) => v.status === "ready").length,
       failed: all.filter((v) => v.status === "failed").length,
       pending: all.filter((v) => v.status === "pending").length,
     },
@@ -271,6 +273,7 @@ app.get("/settings", (req, res) => {
       window_start: store.getSetting("window_start", "06:00"),
       window_end: store.getSetting("window_end", "22:00"),
       ai_base_prompt: store.getSetting("ai_base_prompt", ""),
+      publish_enabled: store.isPublishingEnabled(),
     },
     rotation: store.getSettingJSON("rotation", null),
     next: nextUp(),
@@ -517,6 +520,7 @@ app.get("/api/settings", (req, res) => {
     window_start: store.getSetting("window_start", "06:00"),
     window_end: store.getSetting("window_end", "22:00"),
     ai_base_prompt: store.getSetting("ai_base_prompt", ""),
+    publish_enabled: store.isPublishingEnabled(),
     schedules: getSettings().schedules,
   });
 });
@@ -528,7 +532,12 @@ app.put("/api/settings", (req, res) => {
   if (body.window_start !== undefined) store.setSetting("window_start", body.window_start);
   if (body.window_end !== undefined) store.setSetting("window_end", body.window_end);
   if (body.ai_base_prompt !== undefined) store.setSetting("ai_base_prompt", body.ai_base_prompt);
-  res.json(getSettings());
+  if (body.publish_enabled !== undefined) {
+    const on = body.publish_enabled === true || body.publish_enabled === 1 ||
+      ["1", "true", "on", "yes"].includes(String(body.publish_enabled).toLowerCase());
+    store.setPublishingEnabled(on);
+  }
+  res.json({ ...getSettings(), publish_enabled: store.isPublishingEnabled() });
 });
 
 // Backward-compatible legacy endpoint

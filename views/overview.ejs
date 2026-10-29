@@ -84,7 +84,7 @@
           <a class="list-row" href="/videos?account=<%= v.account_id %>">
             <div class="grow">
               <div class="list-title">
-                <span class="badge <%= v.status === 'success' ? 'ok' : v.status === 'failed' ? 'bad' : 'warn' %>"><span class="dot"></span><%= v.status %></span>
+                <span class="badge <%= v.status === 'success' ? 'ok' : v.status === 'failed' ? 'bad' : v.status === 'ready' ? 'info' : 'warn' %>"><span class="dot"></span><%= v.status %></span>
                 <span>#<%= v.id %></span>
                 <span class="muted small"><%= v.category_name || 'Uncategorized' %></span>
               </div>

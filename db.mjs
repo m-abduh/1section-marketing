@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS videos (
   caption     TEXT,
   content_json TEXT,
   video_path  TEXT,
-  status      TEXT NOT NULL DEFAULT 'pending', -- pending | success | failed
+  status      TEXT NOT NULL DEFAULT 'pending', -- pending | ready | success | failed
   attempts    INTEGER NOT NULL DEFAULT 0,
   last_error  TEXT,
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
@@ -83,6 +83,12 @@ db.prepare(
   "UPDATE settings SET value=? WHERE key='ai_base_prompt' AND value LIKE '%PERSONAL FINANCE content for a video channel%'"
 ).run(DEFAULT_BASE_PROMPT);
 
+// Master switch for Buffer delivery. On by default so existing installs keep
+// publishing exactly as before; turning it off makes the pipeline render only.
+db.prepare(
+  "INSERT INTO settings(key,value) VALUES('publish_enabled','1') ON CONFLICT(key) DO NOTHING"
+).run();
+
 function setSetting(key, value) {
   db.prepare(
     "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value"
@@ -96,11 +102,21 @@ function setSettingJSON(key, value) {
   setSetting(key, JSON.stringify(value));
 }
 
+function isPublishingEnabled() {
+  return getSetting("publish_enabled", "1") !== "0";
+}
+
+function setPublishingEnabled(on) {
+  setSetting("publish_enabled", on ? "1" : "0");
+}
+
 export const store = {
   getSetting,
   setSetting,
   getSettingJSON,
   setSettingJSON,
+  isPublishingEnabled,
+  setPublishingEnabled,
 
   // Accounts
   listAccounts() {
