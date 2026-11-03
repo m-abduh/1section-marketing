@@ -58,11 +58,12 @@ const escapeHtml = (s) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
-// Try to fit the rendered markdown into the 1350px slide by scaling the
-// markdown wrapper down when it would otherwise overflow. Keeps every item on one frame.
+// Try to fit the rendered content card into the 1350px slide by scaling it
+// down when it would otherwise overflow. Keeps every item on one frame.
 const FIT_SCRIPT = `
-const __fit=()=>{const md=document.querySelector('.md');if(!md)return;const body=document.querySelector('.body');const avail=body.clientHeight;const h=md.offsetHeight;if(h>avail&&h>0){md.style.transform='scale('+(avail/h)+')';}};
+const __fit=()=>{const el=document.querySelector('.content-card')||document.querySelector('.md');if(!el)return;const body=document.querySelector('.body');const cs=getComputedStyle(body);const avail=body.clientHeight-(parseFloat(cs.paddingTop)||0)-(parseFloat(cs.paddingBottom)||0);const h=el.offsetHeight;if(h>avail&&h>0){el.style.transform='scale('+(avail/h)+')';}};
 try{__fit();}catch(e){}
+if(document.fonts&&document.fonts.ready){document.fonts.ready.then(()=>{try{__fit();}catch(e){}});}
 `;
 
 // Build the single full README-style markdown body for the slide:
@@ -328,6 +329,8 @@ export async function renderPost({ hook, content, category, account, account_lin
   const dot = link.indexOf(".");
   const accountLinkHead = dot > 0 ? link.slice(0, dot) : link;
   const accountLinkTail = dot > 0 ? link.slice(dot) : "";
+  const accountHandle = String(account || "").replace(/^@/, "").replace(/^1section\./i, "");
+  const accountInitial = (accountLinkHead || accountHandle || "?").trim().charAt(0).toUpperCase();
 
   // The CTA card closes the video with the takeaway. If the AI did not return a
   // conclusion (older stored posts), fall back to the hook so the card is never blank.
@@ -347,6 +350,7 @@ export async function renderPost({ hook, content, category, account, account_lin
     content: htmlContent,
     category: escapeHtml(category || ""),
     account: escapeHtml(account || ""),
+    account_initial: escapeHtml(accountInitial),
     account_link: escapeHtml(link),
     account_link_head: escapeHtml(accountLinkHead),
     account_link_tail: escapeHtml(accountLinkTail),
