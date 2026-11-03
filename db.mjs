@@ -3,6 +3,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { CATEGORY_SEEDS, LEGACY_SEED_NAMES } from "./seed.mjs";
 import { DEFAULT_BASE_PROMPT } from "./services/base-prompt.mjs";
+import { CATEGORY_PROMPTS } from "./services/category-prompts.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_PATH = process.env.DB_PATH || join(__dirname, "db.sqlite");
@@ -318,3 +319,18 @@ export const store = {
 
 store.seedCategories();
 store.syncAllAccountCategories();
+
+// One-time category prompt revamp. The base prompt owns the funnel; each
+// category now also declares a required VISUAL SHAPE so posts never come out
+// as plain prose. Versioned so later dashboard edits are never overwritten.
+const CATEGORY_PROMPT_VERSION = "2";
+if (getSetting("category_prompt_version", "") !== CATEGORY_PROMPT_VERSION) {
+  const updatePrompt = db.prepare("UPDATE categories SET default_prompt=? WHERE name=?");
+  const applyCategoryPrompts = db.transaction(() => {
+    for (const [name, prompt] of Object.entries(CATEGORY_PROMPTS)) {
+      updatePrompt.run(prompt, name);
+    }
+  });
+  applyCategoryPrompts();
+  setSetting("category_prompt_version", CATEGORY_PROMPT_VERSION);
+}

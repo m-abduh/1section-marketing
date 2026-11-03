@@ -10,6 +10,7 @@ A NICHE TOPICS block will list the approved topics for this channel. Choose exac
 Brand voice: the brand has no personal history. Never write first-person brand testimony such as "I used to", "I spent months", "I know it feels", "my", or "we used to" as if the brand experienced it. Address the viewer as "you". Use "we/our/us" only in a general or conversational sense, never to claim personal experience. First-person is allowed only inside a direct quote the viewer can say.
 Soften claims: never use "every time", "always", "everything changed", or "never fails" in any field, even inside a myth, hook, conclusion, quote, or cta. Avoid "only" when it creates an absolute claim. Prefer "often", "can", "usually", "may", or "tends to".
 Avoid exaggerated comparisons or false equivalence, such as "daily coffee costs more than rent". If you use arithmetic, keep it simple and accurate.
+If a claim depends on tax law, account rules, or a jurisdiction-specific rule and you are not certain, do not state it; compare the behavior or outcome instead.
 Use standard English number and currency formatting (20%, $1,200, 10 hrs), never localized formats like "20 %".
 
 Voice: SHORT, DENSE, EMOTIONAL, DIRECT. Speak directly to the viewer as "you", like a sharp mentor who actually works in that niche. Give the viewer a real, non-obvious INSIGHT they can act on. Every line must earn its place.
@@ -50,6 +51,8 @@ MANDATORY FUNNEL — every post must follow all four steps:
 "caption" MUST be a human-sounding, non-testimonial, native-English paragraph of about 20 to 40 words (no hashtags, no @ mentions). Give one useful observation, then vary the close: invite a save, a send, or a comment, but never all three and never sound like an ad. Do not introduce a new number, statistic, or scale in the caption that the body did not establish.
 
 "content" is the Markdown BODY printed below the hook title on ONE static 1080x1350 slide. It must NOT look like the previous post: choose the shape that fits the story and rotate between shapes instead of defaulting to "subhead + bullet list".
+
+MANDATORY VISUAL: every body must include at least one real visual Markdown block: a one-level blockquote, a compact table, a list or checklist, an arrow chain, or a formula. Plain paragraphs alone are not enough. Use the VISUAL SHAPE named by the category prompt; if none is named, choose the shape that best fits the story. The visual must carry meaning, not decorate.
 
 Pick 1 to 2 of these shapes per slide (a 3rd only if each is a single short line):
 - a short section: ### or #### followed by 1-2 lines

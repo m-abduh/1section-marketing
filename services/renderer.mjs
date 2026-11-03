@@ -51,6 +51,18 @@ const PAPER_FILLS = [
   "#f1f0ee",
 ];
 
+// Accent-only palettes: used for rules, dots, numbers, links, and the CTA
+// underline. They never become the dominant background, so every render can
+// feel different without turning into a color block.
+const ACCENT_PALETTES = [
+  { accent: "#e05a33", ink: "#a83a1c", soft: "rgba(224,90,51,.10)", glow: "rgba(224,90,51,.15)", ctaGlow: "rgba(224,90,51,.22)" },
+  { accent: "#0f766e", ink: "#0b5d56", soft: "rgba(15,118,110,.10)", glow: "rgba(15,118,110,.14)", ctaGlow: "rgba(15,118,110,.24)" },
+  { accent: "#4f46e5", ink: "#3730a3", soft: "rgba(79,70,229,.10)", glow: "rgba(79,70,229,.14)", ctaGlow: "rgba(79,70,229,.24)" },
+  { accent: "#9d3c72", ink: "#7a2d58", soft: "rgba(157,60,114,.10)", glow: "rgba(157,60,114,.14)", ctaGlow: "rgba(157,60,114,.24)" },
+  { accent: "#5f6b2a", ink: "#48511f", soft: "rgba(95,107,42,.10)", glow: "rgba(95,107,42,.14)", ctaGlow: "rgba(95,107,42,.22)" },
+  { accent: "#b45309", ink: "#8a3f07", soft: "rgba(180,83,9,.10)", glow: "rgba(180,83,9,.14)", ctaGlow: "rgba(180,83,9,.22)" },
+];
+
 const escapeHtml = (s) =>
   String(s == null ? "" : s)
     .replace(/&/g, "&amp;")
@@ -312,6 +324,7 @@ export function normalizeMarkdownHtml(html) {
 export async function renderPost({ hook, content, category, account, account_link, content_text, conclusion, cta, index }, outputPath) {
   const htmlTpl = readFileSync(join(BUILDER, "unified.html"), "utf-8");
   const bg = PAPER_FILLS[Math.floor(Math.random() * PAPER_FILLS.length)];
+  const accentPalette = ACCENT_PALETTES[Math.floor(Math.random() * ACCENT_PALETTES.length)];
 
   const bodyText = Array.isArray(content)
     ? content.join("\n")
@@ -324,7 +337,9 @@ export async function renderPost({ hook, content, category, account, account_lin
   if (boldMarks % 2 === 1) {
     md = md.replace(/^(\*\*[^*\n]+)$/gm, (line) => (line.endsWith("**") ? line : line + "**"));
   }
-  const htmlContent = normalizeMarkdownHtml(marked.parse(chainifyMarkdown(md)));
+  const bodyMd = md.replace(/^##[^\n]*\n+/, "");
+  const htmlContent = normalizeMarkdownHtml(marked.parse(chainifyMarkdown(bodyMd)));
+  const hookHtml = marked.parseInline(escapeHtml(String(hook || "").trim()));
   const link = String(account_link || "");
   const dot = link.indexOf(".");
   const accountLinkHead = dot > 0 ? link.slice(0, dot) : link;
@@ -357,6 +372,7 @@ export async function renderPost({ hook, content, category, account, account_lin
   const ctaAction = cleanCta(cta) || "Get the full breakdown";
 
   const data = {
+    hook: hookHtml,
     content: htmlContent,
     category: escapeHtml(category || ""),
     account: escapeHtml(account || ""),
@@ -368,6 +384,11 @@ export async function renderPost({ hook, content, category, account, account_lin
     conclusion: escapeHtml(conclusionText),
     cta_action: escapeHtml(ctaAction),
     bg_fill: bg,
+    accent: accentPalette.accent,
+    accent_ink: accentPalette.ink,
+    accent_soft: accentPalette.soft,
+    accent_glow: accentPalette.glow,
+    accent_cta_glow: accentPalette.ctaGlow,
   };
   let html = renderTemplate(htmlTpl, data);
 

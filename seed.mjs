@@ -1,3 +1,5 @@
+import { CATEGORY_PROMPTS } from "./services/category-prompts.mjs";
+
 // Seed categories: one entry = a financial content format + the prompt that
 // steers the AI to produce that format as GitHub-README-style Markdown.
 //
@@ -200,7 +202,13 @@ Create more value with the **same effort**.`,
 **Relevance beats reach.**`,
     }),
   },
-];
+].map((seed) => ({
+  ...seed,
+  // The category-level prompt map is the single source of truth for the
+  // angle + required visual shape. Keep the seed metadata (name/position) but
+  // never let an old readmeBody override the current prompt on boot.
+  default_prompt: CATEGORY_PROMPTS[seed.name] || seed.default_prompt,
+}));
 
 // Pre-rework seed categories that no longer exist in the new 12-category set.
 // Removed on boot so the rotation only ever uses the new README-style formats.
