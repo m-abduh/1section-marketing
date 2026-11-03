@@ -7,7 +7,8 @@
     "dev": "nodemon server.js",
     "start": "NODE_ENV=production node server.js",
     "seed": "node -e \"import('./db.mjs').then(m=>{m.store.seedCategories();m.store.syncAllAccountCategories();console.log('Seed done ->', m.store.listCategories().map(c=>c.name).join(', '))})\"",
-    "seed:accounts": "node seed-accounts.mjs"
+    "seed:accounts": "node seed-accounts.mjs",
+    "seed:extra": "node seed-extra-accounts.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^11.10.0",
