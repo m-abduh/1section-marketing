@@ -180,6 +180,23 @@ const CONCLUSIONS = {
   "Stat": "A thousand followers means nothing without demand.",
 };
 
+// The behavior shift that sits next to the account link (the real pipeline gets
+// this from the AI as `cta`). Keep it short and tied to the story.
+const CTAS = {
+  "Story": "Stop chasing money. Solve one real problem.",
+  "Myth": "Stop counting hours. Check your direction.",
+  "Contrarian": "Stop waiting for motivation. Shrink the task.",
+  "Unpopular Truth": "Stop polishing the idea. Test demand.",
+  "Reframe": "Stop hiding from failure. Read the signal.",
+  "Q&A": "Stop collecting knowledge. Run one experiment.",
+  "Compare": "Stop filling time. Chase one outcome.",
+  "Problem → Solution": "Stop blaming willpower. Fix one friction point.",
+  "Warning": "Stop building features. Ask for a sale.",
+  "Tips": "Stop raising the goal. Lower the first step.",
+  "Formula": "Stop working more. Increase the value.",
+  "Stat": "Stop chasing reach. Find ten people who need it.",
+};
+
 async function main() {
   let i = 1;
   for (const s of SAMPLES) {
@@ -187,7 +204,7 @@ async function main() {
     const out = join(OUT, `${s.name}-${ts}.mp4`);
     console.log(`\n[${i}/${SAMPLES.length}] Rendering "${s.name}" (${s.hook}) ...`);
     try {
-      await renderPost({ hook: s.hook, content: s.content, category: s.name, account: ACCOUNT, account_link: ACCOUNT_LINK, conclusion: CONCLUSIONS[s.name] }, out);
+      await renderPost({ hook: s.hook, content: s.content, category: s.name, account: ACCOUNT, account_link: ACCOUNT_LINK, conclusion: CONCLUSIONS[s.name], cta: CTAS[s.name] }, out);
       console.log(`  ✅ ${s.name} done in ${((Date.now() - ts) / 1000).toFixed(1)}s -> ${out}`);
     } catch (e) {
       console.error(`  ❌ ${s.name} FAILED: ${e.message}`);

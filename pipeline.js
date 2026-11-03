@@ -114,6 +114,7 @@ async function generateAndPost(video, { account, categoryName, prompt, position 
       account: account.name,
       account_link: account.link || "",
       conclusion: gen.conclusion,
+      cta: gen.cta,
       index: position,
     },
     outFile

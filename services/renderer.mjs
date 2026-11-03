@@ -309,7 +309,7 @@ export function normalizeMarkdownHtml(html) {
   return out;
 }
 
-export async function renderPost({ hook, content, category, account, account_link, content_text, conclusion, index }, outputPath) {
+export async function renderPost({ hook, content, category, account, account_link, content_text, conclusion, cta, index }, outputPath) {
   const htmlTpl = readFileSync(join(BUILDER, "unified.html"), "utf-8");
   const bg = PAPER_FILLS[Math.floor(Math.random() * PAPER_FILLS.length)];
 
@@ -346,6 +346,16 @@ export async function renderPost({ hook, content, category, account, account_lin
   };
   const conclusionText = cleanConclusion(conclusion) || String(hook || "").trim();
 
+  const cleanCta = (value) => {
+    let text = String(value || "")
+      .replace(/\*\*|__|~~|`/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (text.length > 120) text = text.slice(0, 117).replace(/\s+\S*$/, "") + "…";
+    return text;
+  };
+  const ctaAction = cleanCta(cta) || "Get the full breakdown";
+
   const data = {
     content: htmlContent,
     category: escapeHtml(category || ""),
@@ -356,6 +366,7 @@ export async function renderPost({ hook, content, category, account, account_lin
     account_link_tail: escapeHtml(accountLinkTail),
     niche: escapeHtml(accountLinkHead),
     conclusion: escapeHtml(conclusionText),
+    cta_action: escapeHtml(ctaAction),
     bg_fill: bg,
   };
   let html = renderTemplate(htmlTpl, data);

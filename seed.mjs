@@ -29,7 +29,13 @@ ${structure}
 Exact visual style to emulate (invent fresh content, never copy verbatim):
 ${example}
 
-Rules: 100% Markdown, plain flowing body. Use only safe inline styling — **bold** (1-2 key words max, never a whole line), *italic*, ~~strikethrough~~, "- " lists, and | tables | when asked. NEVER use container blocks: no blockquotes (>) and no \`\`\`text code fences — write everything as plain paragraphs and lists. NEVER repeat the hook text anywhere in the body; the body must add new information, not echo the title. No emojis, no emoticons, text + numbers only, symbols (× = ≠ ↓) only where meaningful. Every line short enough for one screen. Correct financial theory and accurate numbers.`;
+Rules: 100% Markdown, plain flowing body. Use only safe inline styling — **bold** (1-2 key words max, never a whole line), *italic*, ~~strikethrough~~, "- " lists, and | tables | when asked. NEVER use container blocks: no blockquotes (>) and no \`\`\`text code fences — write everything as plain paragraphs and lists. NEVER repeat the hook text anywhere in the body; the body must add new information, not echo the title. No emojis, no emoticons, text + numbers only, symbols (× = ≠ ↓) only where meaningful. Every line short enough for one screen. Correct financial theory and accurate numbers.
+
+FUNNEL OVERRIDE (highest priority):
+- The hook is a real problem + cause, not a statistic or a forced money example.
+- The body tells the story of how the cause creates the problem. Do not put the fix, tip, audit, or next step in the body; it belongs in cta.
+- The cta names the specific behavior to stop and the replacement behavior to start.
+- The conclusion stays proportional to the body; do not introduce a new number or scale.`;
 }
 export const CATEGORY_SEEDS = [
   {

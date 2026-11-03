@@ -83,8 +83,11 @@ function extractJSON(text) {
 // final output contract on every request so "conclusion" is always generated,
 // regardless of which prompt revision is saved.
 const OUTPUT_CONTRACT = `FINAL OUTPUT CONTRACT (overrides any earlier output-format instruction):
-Return ONLY raw JSON (no markdown fences) with exactly these keys: "hook", "content", "caption", "conclusion".
-"conclusion" = ONE short, plain-text sentence (max 18 words) that states the takeaway of this exact post. No markdown, no hashtags, no @mentions, no emojis, and do not repeat the hook word-for-word. It is printed on the dark end card under "THE TAKEAWAY".`;
+Return ONLY raw JSON (no markdown fences) with exactly these keys: "hook", "content", "caption", "conclusion", "cta".
+"hook" = 7-14 words: a real-world problem + its actual cause, in second person (you/your). True and observable. Do not force a number, dollar amount, percentage, or time span into the hook. No third-person labels, invented stats, studies, quotes, names, dates, events, or fake scenarios. No contrived shock bait.
+"content" = the Markdown story body: 2-4 short beats showing how the cause creates the problem, in second person and short sentences. Do not put the fix, tip, or next step in content; it belongs in cta. Under about 45 words (table cells excluded).
+"cta" = ONE short imperative (max 10 words) naming the specific behavior that caused the problem and the replacement behavior to start. Do not use a vague awareness gap such as "stop ignoring X". Plain text, no markdown, no hashtags, no @mentions, no emojis, no URL or domain. It is printed next to the account link.
+"conclusion" = ONE short, plain-text sentence (max 18 words) stating the takeaway. Keep it proportional to the story; do not introduce a new number or scale the body did not establish. No markdown, no hashtags, no @mentions, no emojis, and do not repeat the hook word-for-word. It is printed on the dark end card under "THE BOTTOM LINE".`;
 
 /**
  * Generate post content (copywriting + caption) for an account+category.
@@ -92,7 +95,7 @@ Return ONLY raw JSON (no markdown fences) with exactly these keys: "hook", "cont
  * @param {string} opts.accountName  Buffer account name
  * @param {string} opts.categoryName  Category label (e.g. "stat", "story")
  * @param {string} opts.prompt  Per-account-category AI prompt (customizable)
- * @returns {{hook, content, caption, content_json}}
+ * @returns {{hook, content, caption, conclusion, cta, content_json}}
  */
 export async function generatePost({ accountName, categoryName, prompt }) {
   const base = loadBasePrompt();
@@ -131,11 +134,16 @@ ${OUTPUT_CONTRACT}`;
     parsed.conclusion || parsed.takeaway || parsed.summary || ""
   ).trim();
 
+  const cta = String(
+    parsed.cta || parsed.action || parsed.behavior || parsed.next_step || ""
+  ).replace(/\s+/g, " ").trim();
+
   return {
     hook: String(parsed.hook || parsed.title || ""),
     content,
     caption: String(parsed.caption || parsed.follow_call || "").trim() + " #1section",
     conclusion,
+    cta,
     content_json: JSON.stringify(parsed),
   };
 }
