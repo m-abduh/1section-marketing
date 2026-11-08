@@ -63,8 +63,19 @@ CREATE TABLE IF NOT EXISTS videos (
 
 // Migration: `link` holds the public per-account URL shown in the video footer
 // (e.g. finance.1section.com). Added after the initial schema, so guard it.
-if (!db.prepare("PRAGMA table_info(accounts)").all().some((c) => c.name === "link")) {
-  db.exec("ALTER TABLE accounts ADD COLUMN link TEXT NOT NULL DEFAULT ''");
+{
+  const accountCols = new Set(db.prepare("PRAGMA table_info(accounts)").all().map((c) => c.name));
+  if (!accountCols.has("link")) db.exec("ALTER TABLE accounts ADD COLUMN link TEXT NOT NULL DEFAULT ''");
+  // Central niche mapping (from MASTER_DB niches) + per-account product rotation marker.
+  if (!accountCols.has("niche_id")) db.exec("ALTER TABLE accounts ADD COLUMN niche_id TEXT NOT NULL DEFAULT ''");
+  if (!accountCols.has("niche_name")) db.exec("ALTER TABLE accounts ADD COLUMN niche_name TEXT NOT NULL DEFAULT ''");
+  if (!accountCols.has("last_product_id")) db.exec("ALTER TABLE accounts ADD COLUMN last_product_id TEXT NOT NULL DEFAULT ''");
+}
+{
+  const videoCols = new Set(db.prepare("PRAGMA table_info(videos)").all().map((c) => c.name));
+  if (!videoCols.has("product_id")) db.exec("ALTER TABLE videos ADD COLUMN product_id TEXT");
+  if (!videoCols.has("product_name")) db.exec("ALTER TABLE videos ADD COLUMN product_name TEXT");
+  if (!videoCols.has("niche_id")) db.exec("ALTER TABLE videos ADD COLUMN niche_id TEXT");
 }
 
 function getSetting(key, fallback = "") {
@@ -126,20 +137,27 @@ export const store = {
   getAccount(id) {
     return db.prepare("SELECT * FROM accounts WHERE id = ?").get(id);
   },
-  createAccount({ name, buffer_token, link }) {
+  createAccount({ name, buffer_token, link, niche_id, niche_name }) {
     const max = db.prepare("SELECT COALESCE(MAX(position)+1,0) AS p FROM accounts").get().p;
     const info = db.prepare(
-      "INSERT INTO accounts(name, buffer_token, link, position) VALUES(?,?,?,?)"
-    ).run(name, buffer_token, link || "", max);
+      "INSERT INTO accounts(name, buffer_token, link, niche_id, niche_name, position) VALUES(?,?,?,?,?,?)"
+    ).run(name, buffer_token, link || "", niche_id || "", niche_name || "", max);
     this.syncAllAccountCategories();
     return this.getAccount(info.lastInsertRowid);
   },
-  updateAccount(id, { name, buffer_token, link }) {
+  updateAccount(id, { name, buffer_token, link, niche_id, niche_name }) {
     const existing = this.getAccount(id);
     if (!existing) return undefined;
     const nextLink = link !== undefined ? link : existing.link;
-    db.prepare("UPDATE accounts SET name=?, buffer_token=?, link=? WHERE id=?")
-      .run(name, buffer_token, nextLink, id);
+    const nextNicheId = niche_id !== undefined ? (niche_id || "") : (existing.niche_id || "");
+    const nextNicheName = niche_name !== undefined ? (niche_name || "") : (existing.niche_name || "");
+    db.prepare(
+      "UPDATE accounts SET name=?, buffer_token=?, link=?, niche_id=?, niche_name=? WHERE id=?"
+    ).run(name, buffer_token, nextLink, nextNicheId, nextNicheName, id);
+    return this.getAccount(id);
+  },
+  setAccountLastProduct(id, productId) {
+    db.prepare("UPDATE accounts SET last_product_id=? WHERE id=?").run(productId || "", id);
     return this.getAccount(id);
   },
   deleteAccount(id) {
@@ -282,19 +300,21 @@ export const store = {
   createVideo(account, category, data) {
     const info = db.prepare(`
       INSERT INTO videos(account_id, category_id, account_name, category_name,
-                         hook, content, caption, content_json, video_path, status, attempts)
-      VALUES(?,?,?,?,?,?,?,?,?,?,?)
+                         hook, content, caption, content_json, video_path, status, attempts,
+                         product_id, product_name, niche_id)
+      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `).run(
       account?.id ?? null, category?.id ?? null,
       account?.name ?? "", category?.name ?? "",
       data.hook ?? null, data.content ?? null, data.caption ?? null,
       data.content_json ?? null, data.video_path ?? null,
-      data.status || "pending", 0
+      data.status || "pending", 0,
+      data.product_id ?? null, data.product_name ?? null, data.niche_id ?? null
     );
     return this.getVideo(info.lastInsertRowid);
   },
   updateVideo(id, patch) {
-    const allowed = ["hook", "content", "caption", "content_json", "video_path", "status", "attempts", "last_error", "posted_at"];
+    const allowed = ["hook", "content", "caption", "content_json", "video_path", "status", "attempts", "last_error", "posted_at", "product_id", "product_name", "niche_id"];
     const sets = [];
     const vals = [];
     for (const k of allowed) {

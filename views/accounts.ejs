@@ -31,7 +31,7 @@
             <div class="avatar"><%= ((row.name.split('.').pop() || row.name).replace(/[^a-zA-Z0-9]/g, '').slice(0, 2) || '?').toUpperCase() %></div>
             <div class="grow">
               <div style="font-size:15px;font-weight:700;letter-spacing:-.02em"><%= row.name %></div>
-              <div class="small muted" style="margin-top:2px"><%= row.link || 'no link set' %></div>
+              <div class="small muted" style="margin-top:2px"><%= row.link || 'no link set' %><% if (row.niche_name || row.niche_id) { %> · niche: <%= row.niche_name || row.niche_id %><% } %></div>
             </div>
             <div class="row" style="gap:3px;flex-wrap:nowrap">
               <button class="icon-btn" title="Move up" onclick="moveAccount(<%= row.id %>, -1)" <%= index === 0 ? 'disabled' : '' %>>
@@ -84,9 +84,16 @@
     </div>
     <div class="modal-body">
       <label class="field">
-        <span class="lbl">Account name</span>
-        <input class="input" type="text" id="acc_name" placeholder="e.g. 1section.finance">
+        <span class="lbl">Account name (niche)</span>
+        <select class="input" id="acc_name">
+          <option value="">— Select a niche —</option>
+          <% (niches || []).forEach((n) => { %>
+            <option value="<%= n.name %>" data-id="<%= n.id %>"><%= n.name %></option>
+          <% }) %>
+        </select>
+        <span class="help">Pulled from the central <code>niches</code> table. The niche id is saved with this account.</span>
       </label>
+      <input type="hidden" id="acc_niche_id" value="">
       <label class="field">
         <span class="lbl">Buffer API token</span>
         <input class="input" type="text" id="acc_token" placeholder="buffer access token" autocomplete="off">
@@ -108,6 +115,13 @@
 const order = <%- JSON.stringify(rows.map((r) => r.id)) %>;
 let editingId = null;
 
+function syncNicheId() {
+  const sel = document.getElementById('acc_name');
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('acc_niche_id').value = (opt && opt.dataset && opt.dataset.id) ? opt.dataset.id : '';
+}
+document.getElementById('acc_name').addEventListener('change', syncNicheId);
+
 async function openAccountModal(id) {
   editingId = id || null;
   document.getElementById('accountModalTitle').textContent = id ? 'Edit Buffer account' : 'Add Buffer account';
@@ -115,35 +129,48 @@ async function openAccountModal(id) {
   const nameEl = document.getElementById('acc_name');
   const tokenEl = document.getElementById('acc_token');
   const linkEl = document.getElementById('acc_link');
-  nameEl.value = ''; tokenEl.value = ''; linkEl.value = '';
+  const nicheIdEl = document.getElementById('acc_niche_id');
+  nameEl.value = ''; tokenEl.value = ''; linkEl.value = ''; nicheIdEl.value = '';
 
   if (id) {
     try {
       const account = await UI.api('/api/accounts/' + id);
-      nameEl.value = account.name || '';
       tokenEl.value = account.buffer_token || '';
       linkEl.value = account.link || '';
+      // Select niche by saved id (preferred) or by saved name.
+      if (account.niche_id) {
+        const match = Array.from(nameEl.options).find(o => o.dataset && o.dataset.id === account.niche_id);
+        if (match) nameEl.value = match.value;
+      } else if (account.name) {
+        nameEl.value = account.name;
+      }
+      nicheIdEl.value = account.niche_id || '';
     } catch (err) {
       UI.toast(err.message, 'err');
       return;
     }
   }
 
+  syncNicheId();
   UI.openModal('accountModal');
   nameEl.focus();
 }
 
 async function saveAccount() {
+  syncNicheId();
   const name = document.getElementById('acc_name').value.trim();
   const token = document.getElementById('acc_token').value.trim();
   const link = document.getElementById('acc_link').value.trim();
-  if (!name || !token) return UI.toast('Name and Buffer token are required', 'err');
+  const niche_id = document.getElementById('acc_niche_id').value.trim();
+  const niche_name = name; // account name is the niche name (from niches table)
+  if (!name || !token) return UI.toast('Niche (name) and Buffer token are required', 'err');
 
   const btn = document.getElementById('acc_save');
   btn.disabled = true;
   try {
-    if (editingId) await UI.put('/api/accounts/' + editingId, { name, buffer_token: token, link });
-    else await UI.post('/api/accounts', { name, buffer_token: token, link });
+    const payload = { name, buffer_token: token, link, niche_id, niche_name };
+    if (editingId) await UI.put('/api/accounts/' + editingId, payload);
+    else await UI.post('/api/accounts', payload);
     UI.toast(editingId ? 'Account updated' : 'Account added', 'ok');
     setTimeout(() => location.reload(), 500);
   } catch (err) {

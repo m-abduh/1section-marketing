@@ -13,6 +13,7 @@ import { getSettings } from "./scheduler.js";
 import { nextSlot } from "./pipeline.js";
 import { getAnalytics } from "./services/analytics.mjs";
 import { getFullAnalytics } from "./services/analytics-full.mjs";
+import { listNiches } from "./services/masterdb.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -166,7 +167,7 @@ app.get("/", (req, res) => {
   }));
 });
 
-app.get("/accounts", (req, res) => {
+app.get("/accounts", async (req, res) => {
   const videos = store.listVideos();
   const rows = store.listAccounts().map((account) => {
     const { buffer_token, ...safe } = account;
@@ -177,7 +178,9 @@ app.get("/accounts", (req, res) => {
       categoryCount: store.listAccountCategories(account.id).length,
     };
   });
-  res.render("accounts", page("accounts", "Accounts", { rows }));
+  let niches = [];
+  try { niches = await listNiches(); } catch (e) { console.warn("[server] listNiches failed:", e.message); }
+  res.render("accounts", page("accounts", "Accounts", { rows, niches }));
 });
 
 app.get("/accounts/:id", (req, res) => {
@@ -377,6 +380,15 @@ app.delete("/api/music/:file", (req, res) => {
   res.json({ ok: true });
 });
 
+app.get("/api/niches", async (req, res) => {
+  try {
+    res.json(await listNiches());
+  } catch (e) {
+    console.error("[server] /api/niches error:", e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ---------- Accounts ----------
 app.get("/api/accounts", (req, res) => {
   res.json(store.listAccounts());
@@ -389,23 +401,31 @@ app.get("/api/accounts/:id", (req, res) => {
 });
 
 app.post("/api/accounts", (req, res) => {
-  const { name, buffer_token, link } = req.body || {};
+  const { name, buffer_token, link, niche_id, niche_name } = req.body || {};
   if (!name || !buffer_token) return res.status(400).json({ error: "name and buffer_token required" });
   try {
-    res.json(store.createAccount({ name: name.trim(), buffer_token: buffer_token.trim(), link: (link || "").trim() }));
+    res.json(store.createAccount({
+      name: name.trim(),
+      buffer_token: buffer_token.trim(),
+      link: (link || "").trim(),
+      niche_id: (niche_id || "").trim(),
+      niche_name: (niche_name || "").trim(),
+    }));
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
 });
 
 app.put("/api/accounts/:id", (req, res) => {
-  const { name, buffer_token, link } = req.body || {};
+  const { name, buffer_token, link, niche_id, niche_name } = req.body || {};
   const existing = store.getAccount(Number(req.params.id));
   if (!existing) return res.status(404).json({ error: "not found" });
   const updated = store.updateAccount(existing.id, {
     name: name !== undefined ? name : existing.name,
     buffer_token: buffer_token !== undefined ? buffer_token : existing.buffer_token,
     link: link !== undefined ? link.trim() : existing.link,
+    niche_id: niche_id !== undefined ? String(niche_id || "").trim() : existing.niche_id,
+    niche_name: niche_name !== undefined ? String(niche_name || "").trim() : existing.niche_name,
   });
   res.json(updated);
 });

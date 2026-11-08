@@ -4,6 +4,7 @@ import { store } from "./db.mjs";
 import { generatePost } from "./services/openrouter.js";
 import { generateVideo } from "./services/videogen.js";
 import { getChannels, createPost } from "./services/buffer.js";
+import { nextProductForNiche } from "./services/masterdb.mjs";
 
 const MAX_ATTEMPTS = Number(process.env.RETRY_ATTEMPTS || 3);
 const RETRY_DELAY_MS = Number(process.env.RETRY_DELAY_MS || 5000);
@@ -64,7 +65,7 @@ export async function runPipeline({ videoId } = {}) {
 
   let result;
   try {
-    result = await generateAndPost(video, { account, categoryName, prompt, position: categoryRow.position });
+    result = await generateAndPost(video, { account, categoryName, prompt, position: categoryRow.position, nicheId: account.niche_id || null });
 
     // Advance rotation only after a successful slot
     let nextIndex = accountIndex + 1;
@@ -83,10 +84,29 @@ export async function runPipeline({ videoId } = {}) {
   return { result, video: store.getVideo(video.id) || video };
 }
 
-async function generateAndPost(video, { account, categoryName, prompt, position }) {
+async function generateAndPost(video, { account, categoryName, prompt, position, nicheId }) {
   const outFile = `${account.name.replace(/[^a-zA-Z0-9-_]+/g, "-")}-${Date.now()}.mp4`;
 
-  const gen = await generatePost({ accountName: account.name, categoryName, prompt });
+  // Resolve the next product for this niche (cycles 1,2,3 -> 1,... using last_product_id).
+  let product = null;
+  const effectiveNicheId = nicheId || account.niche_id || null;
+  if (effectiveNicheId) {
+    try {
+      product = await nextProductForNiche(effectiveNicheId, account.last_product_id || null);
+    } catch (e) {
+      console.warn(`[pipeline] product lookup failed for niche ${effectiveNicheId}:`, e.message);
+    }
+  }
+  if (product) {
+    video = store.updateVideo(video.id, {
+      product_id: product.id,
+      product_name: product.name || null,
+      niche_id: effectiveNicheId,
+    });
+    console.log(`[pipeline] content product: ${product.name} (${product.id})`);
+  }
+
+  const gen = await generatePost({ accountName: account.name, categoryName, prompt, product });
   video = store.updateVideo(video.id, {
     hook: gen.hook,
     content: gen.content,
@@ -123,13 +143,19 @@ async function generateAndPost(video, { account, categoryName, prompt, position 
 
   // Publishing off: the AI + renderer still ran, so keep the finished file and
   // mark it ready. A manual retry can publish it later without re-rendering.
+  // (Do NOT advance last_product_id here: "berhasil terupload" means published.)
   if (!store.isPublishingEnabled()) {
     video = store.updateVideo(video.id, { status: "ready", posted_at: null, last_error: null });
     console.log(`[pipeline] Publishing disabled; video #${video.id} rendered and left ready`);
-    return { status: "ready", published: false };
+    return { status: "ready", published: false, product: product ? { id: product.id, name: product.name } : null };
   }
 
-  return uploadWithRetry(video);
+  const result = await uploadWithRetry(video);
+  // Only advance the product pointer after a successful Buffer publish.
+  if (result && result.status === "success" && product) {
+    store.setAccountLastProduct(account.id, product.id);
+  }
+  return { ...result, product: product ? { id: product.id, name: product.name } : null };
 }
 
 async function uploadWithRetry(video) {
@@ -211,5 +237,9 @@ export async function runManualRetry(videoId) {
 
   video = store.updateVideo(video.id, { status: "pending", last_error: null });
   const result = await uploadWithRetry(video);
+  // Advance the product pointer when a previously-rendered video is published now.
+  if (result && result.status === "success" && video.product_id) {
+    store.setAccountLastProduct(account.id, video.product_id);
+  }
   return { result, video };
 }

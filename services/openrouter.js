@@ -89,15 +89,30 @@ Return ONLY raw JSON (no markdown fences) with exactly these keys: "hook", "cont
 "cta" = ONE short imperative (max 10 words) naming the specific behavior that caused the problem and the replacement behavior to start. Do not use a vague awareness gap such as "stop ignoring X". Plain text, no markdown, no hashtags, no @mentions, no emojis, no URL or domain. It is printed next to the account link.
 "conclusion" = ONE short, plain-text sentence (max 18 words) stating the takeaway. Keep it proportional to the story; do not introduce a new number or scale the body did not establish. No markdown, no hashtags, no @mentions, no emojis, and do not repeat the hook word-for-word. It is printed on the dark end card under "THE BOTTOM LINE".`;
 
+function productBrief(product) {
+  if (!product) return "";
+  const lines = [`Product (base the post on this product's problem/solution; stay true to it): ${product.name}`];
+  if (product.summary) lines.push(`Summary: ${String(product.summary).trim()}`);
+  if (product.description) lines.push(`Description: ${String(product.description).trim()}`);
+  if (product.outcome) lines.push(`Outcome: ${String(product.outcome).trim()}`);
+  if (product.audience) lines.push(`Audience: ${String(product.audience).trim()}`);
+  const feats = Array.isArray(product.features) ? product.features.filter(Boolean) : [];
+  if (feats.length) lines.push(`Key features: ${feats.join("; ")}`);
+  const learns = Array.isArray(product.learnings) ? product.learnings.filter(Boolean) : [];
+  if (learns.length) lines.push(`What they learn: ${learns.join("; ")}`);
+  return lines.join("\n");
+}
+
 /**
  * Generate post content (copywriting + caption) for an account+category.
  * @param {object} opts
  * @param {string} opts.accountName  Buffer account name
  * @param {string} opts.categoryName  Category label (e.g. "stat", "story")
  * @param {string} opts.prompt  Per-account-category AI prompt (customizable)
+ * @param {object} [opts.product]  Master-DB product to base the content on
  * @returns {{hook, content, caption, conclusion, cta, content_json}}
  */
-export async function generatePost({ accountName, categoryName, prompt }) {
+export async function generatePost({ accountName, categoryName, prompt, product }) {
   const base = loadBasePrompt();
 
   const src = (prompt && prompt.trim())
@@ -105,16 +120,22 @@ export async function generatePost({ accountName, categoryName, prompt }) {
     : `The topic is up to you — pick something timely and relevant to ${categoryName}.`;
 
   const { niche, topics } = topicsForAccount(accountName);
+  const nicheLabel = (product && product.nicheId) ? niche : niche;
   const topicBlock = topics.length
-    ? `Niche: ${niche}
+    ? `Niche: ${nicheLabel}
 NICHE TOPICS (choose exactly ONE; build the whole post around it; do not mix topics or switch niches):
 ${topics.map((t) => `- ${t}`).join("\n")}
 
 `
+    : `Niche: ${nicheLabel}\n\n`;
+
+  const prod = productBrief(product);
+  const productBlock = prod
+    ? `PRODUCT SOURCE (required): Base this post on the real problem this product addresses and the outcome it enables. Do NOT invent product claims; stay within the facts below.\n${prod}\n\n`
     : "";
 
   const userPrompt = `Video channel name: ${accountName}
-${topicBlock}Category: ${categoryName}
+${topicBlock}${productBlock}Category: ${categoryName}
 
 SOURCE INSTRUCTIONS (these define the content style, structure, and format — follow them first):
 ${src}
