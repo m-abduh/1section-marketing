@@ -455,7 +455,7 @@ export async function renderPost(
     for (const f of fallbacks) { addPoint(f); if (productPoints.length >= 3) break; }
   }
   productPoints.length = Math.min(productPoints.length, 3);
-  const benefitsTitle = productName ? `In this E-book: ${productName}` : "In this E-book";
+  const benefitsTitle = "Why this E-book?";
 
   const data = {
     hook: hookHtml,
