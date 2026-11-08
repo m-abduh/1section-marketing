@@ -25,6 +25,10 @@ function renderTemplate(tpl, data) {
       let out = block;
       out = out.replace(/\{\{@index\}\}/g, String(idx));
       out = out.replace(/\{\{@index1\}\}/g, String(idx + 1));
+      // Access parent/root data from inside an each block.
+      out = out.replace(/\{\{\.\.\/(\w+)\}\}/g, (_, k) =>
+        data[k] != null ? String(data[k]) : ""
+      );
       if (typeof item === "string" || typeof item === "number") {
         return out.replace(/\{\{\.\}\}/g, String(item));
       }
@@ -321,7 +325,10 @@ export function normalizeMarkdownHtml(html) {
   return out;
 }
 
-export async function renderPost({ hook, content, category, account, account_link, content_text, conclusion, cta, index }, outputPath) {
+export async function renderPost(
+  { hook, content, category, account, account_link, content_text, conclusion, cta, recommendation, source, product_name, product_image, product_features, product_learnings, product_outcome, niche, index },
+  outputPath
+) {
   const htmlTpl = readFileSync(join(BUILDER, "unified.html"), "utf-8");
   const bg = PAPER_FILLS[Math.floor(Math.random() * PAPER_FILLS.length)];
   const accentPalette = ACCENT_PALETTES[Math.floor(Math.random() * ACCENT_PALETTES.length)];
@@ -339,6 +346,12 @@ export async function renderPost({ hook, content, category, account, account_lin
   }
   const bodyMd = md.replace(/^##[^\n]*\n+/, "");
   const htmlContent = normalizeMarkdownHtml(marked.parse(chainifyMarkdown(bodyMd)));
+  const cleanSource = String(source || "")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/[\u2013\u2014]/g, ", ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const sourceLabel = cleanSource ? `Source: ${cleanSource}` : "";
   const hookHtml = marked.parseInline(escapeHtml(String(hook || "").trim()));
   const link = String(account_link || "");
   const dot = link.indexOf(".");
@@ -346,6 +359,7 @@ export async function renderPost({ hook, content, category, account, account_lin
   const accountLinkTail = dot > 0 ? link.slice(dot) : "";
   const accountHandle = String(account || "").replace(/^@/, "").replace(/^1section\./i, "");
   const accountInitial = (accountLinkHead || accountHandle || "?").trim().charAt(0).toUpperCase();
+  const nicheLabel = String(niche || accountLinkHead || accountHandle || "1section").trim();
 
   // The CTA card closes the video with the takeaway. If the AI did not return a
   // conclusion (older stored posts), fall back to the hook so the card is never blank.
@@ -369,20 +383,102 @@ export async function renderPost({ hook, content, category, account, account_lin
     if (text.length > 120) text = text.slice(0, 117).replace(/\s+\S*$/, "") + "…";
     return text;
   };
-  const ctaAction = cleanCta(cta) || "Get the full breakdown";
+  const ctaAction = cleanCta(cta) || "Link in bio";
+  const productName = String(product_name || "").trim();
+  const productImage = String(product_image || "").trim();
+  const escAttr = (s) =>
+    String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  // Dynamic, emotional-but-relaxed recommendation (AI-generated per post); fallback is soft & human.
+  const cleanRec = (value) => {
+    let t = String(value || "")
+      .replace(/[\u2013\u2014]/g, ", ")
+      .replace(/\s+/g, " ")
+      .replace(/!+/g, ".")
+      .trim();
+    if (t.length > 130) t = t.slice(0, 127).replace(/[\s,;:.]+\S*$/, "");
+    return t;
+  };
+  const softSolution = cleanRec(recommendation) ||
+    (productName ? `If this feels familiar, ${productName} can bring a little calm and clarity to it.` : "If this feels familiar, there is a gentle place to find some clarity in the link below.");
+
+  // Points shown to the right of the book: BENEFITS/what you get (not features), tailored to the post.
+  const toPointList = (v) => {
+    if (Array.isArray(v)) return v.map((x) => String(x || "").trim()).filter(Boolean);
+    if (typeof v === "string" && v.trim()) {
+      try {
+        const p = JSON.parse(v);
+        if (Array.isArray(p)) return p.map((x) => String(x || "").trim()).filter(Boolean);
+      } catch {}
+    }
+    return [];
+  };
+  const cleanBenefit = (s) => {
+    let t = String(s || "")
+      .replace(/[\u2013\u2014]/g, ", ")
+      .replace(/\s+-\s+/g, ", ")
+      .replace(/\s+/g, " ")
+      .trim();
+    // drop mechanical "You get/You will/You can" openers -> natural phrasing
+    t = t.replace(/^(you(?:'ll| will| can)?\s+(?:get|have|learn|gain|be able to)\s+)/i, "");
+    t = t.replace(/^(you(?:'ll| will| can)?\s+)/i, "");
+    t = t.replace(/^[,;:.\s]+/, "");
+    if (!t) return "";
+    t = t.charAt(0).toUpperCase() + t.slice(1);
+    if (t.length > 80) t = t.slice(0, 77).replace(/[\s,;:.]+\S*$/, "");
+    return t;
+  };
+  const rawBenefits = [
+    ...(product_outcome ? [String(product_outcome).trim()] : []),
+    ...toPointList(product_learnings),
+  ].filter(Boolean);
+  const productPoints = [];
+  const seen = new Set();
+  const addPoint = (text) => {
+    const b = cleanBenefit(text);
+    const key = b.toLowerCase();
+    if (!b || seen.has(key)) return;
+    seen.add(key);
+    productPoints.push(b);
+  };
+  for (const p of rawBenefits) { addPoint(p); if (productPoints.length >= 3) break; }
+  // Fallback: natural benefits framed around the post's problem (never product features).
+  if (productPoints.length < 3) {
+    const nicheWord = String(nicheLabel || "this").trim().toLowerCase();
+    const hookHint = String(hook || "").replace(/[\u2013\u2014]/g, ", ").replace(/\s+/g, " ").trim();
+    const shortHook = hookHint.length > 44 ? hookHint.slice(0, 41).replace(/\s+\S*$/, "") : hookHint;
+    const fallbacks = [
+      shortHook ? `See ${shortHook} with fresh clarity` : `See this ${nicheWord} challenge with fresh clarity`,
+      `Easy steps that fit into real life`,
+      `A calm sense of what to do next`,
+    ];
+    for (const f of fallbacks) { addPoint(f); if (productPoints.length >= 3) break; }
+  }
+  productPoints.length = Math.min(productPoints.length, 3);
+  const benefitsTitle = productName ? `In this E-book: ${productName}` : "In this E-book";
 
   const data = {
     hook: hookHtml,
     content: htmlContent,
+    source: escapeHtml(sourceLabel),
     category: escapeHtml(category || ""),
     account: escapeHtml(account || ""),
     account_initial: escapeHtml(accountInitial),
     account_link: escapeHtml(link),
     account_link_head: escapeHtml(accountLinkHead),
     account_link_tail: escapeHtml(accountLinkTail),
-    niche: escapeHtml(accountLinkHead),
+    niche: escapeHtml(nicheLabel),
     conclusion: escapeHtml(conclusionText),
     cta_action: escapeHtml(ctaAction),
+    product_name: escapeHtml(productName),
+    benefits_title: escapeHtml(benefitsTitle),
+    // Keep image URL usable in src (escape quotes/angles; preserve & in query).
+    product_image: escAttr(productImage),
+    // Conditionals for the template engine (renders block when array is non-empty).
+    _product_has_image: productImage ? [1] : [],
+    _product_no_image: productImage ? [] : [1],
+    product_points: productPoints.map((t) => ({ text: escapeHtml(t) })),
+    soft_solution: escapeHtml(softSolution),
     bg_fill: bg,
     accent: accentPalette.accent,
     accent_ink: accentPalette.ink,

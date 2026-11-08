@@ -4,7 +4,8 @@ import { store } from "./db.mjs";
 import { generatePost } from "./services/openrouter.js";
 import { generateVideo } from "./services/videogen.js";
 import { getChannels, createPost } from "./services/buffer.js";
-import { nextProductForNiche } from "./services/masterdb.mjs";
+import { nextProductForNiche, getNiche } from "./services/masterdb.mjs";
+import { findCurrentNews } from "./services/news.mjs";
 
 const MAX_ATTEMPTS = Number(process.env.RETRY_ATTEMPTS || 3);
 const RETRY_DELAY_MS = Number(process.env.RETRY_DELAY_MS || 5000);
@@ -106,7 +107,23 @@ async function generateAndPost(video, { account, categoryName, prompt, position,
     console.log(`[pipeline] content product: ${product.name} (${product.id})`);
   }
 
-  const gen = await generatePost({ accountName: account.name, categoryName, prompt, product });
+  // Current, trusted-news problem grounding (bounded by the chosen product).
+  let newsItems = [];
+  if (effectiveNicheId) {
+    try {
+      const nicheRow = await getNiche(effectiveNicheId);
+      newsItems = await findCurrentNews({
+        nicheName: nicheRow?.name || account.niche_name || account.name || "",
+        nicheSlug: nicheRow?.slug || "",
+        product,
+      });
+      if (newsItems.length) console.log(`[pipeline] news grounding: ${newsItems.length} item(s) for ${nicheRow?.name || effectiveNicheId}`);
+    } catch (e) {
+      console.warn("[pipeline] news lookup failed (continuing without news):", e.message);
+    }
+  }
+
+  const gen = await generatePost({ accountName: account.name, categoryName, prompt, product, newsItems });
   video = store.updateVideo(video.id, {
     hook: gen.hook,
     content: gen.content,
@@ -130,11 +147,19 @@ async function generateAndPost(video, { account, categoryName, prompt, position,
     {
       hook: gen.hook,
       content: gen.content,
+      source: gen.source || "",
       category: categoryName,
       account: account.name,
       account_link: account.link || "",
       conclusion: gen.conclusion,
       cta: gen.cta,
+      recommendation: gen.recommendation || "",
+      product_name: product ? (product.name || "") : "",
+      product_image: product ? (product.coverImage || "") : "",
+      product_features: product ? (product.features || []) : [],
+      product_learnings: product ? (product.learnings || []) : [],
+      product_outcome: product ? (product.outcome || "") : "",
+      niche: account.niche_name || (account.name || "").split(".").pop() || "1section",
       index: position,
     },
     outFile

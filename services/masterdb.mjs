@@ -59,7 +59,7 @@ export async function nextProductForNiche(nicheId, lastProductId) {
   if (!hasMasterDb() || !nicheId) return null;
   const { rows: products } = await getPool().query(
     `SELECT id, "nicheId", name, slug, summary, description, outcome,
-            features, learnings, audience, level, "sortOrder", "createdAt"
+            features, learnings, audience, level, "coverImage", "sortOrder", "createdAt"
        FROM products
       WHERE "nicheId" = $1 AND active = true
       ORDER BY "sortOrder" ASC, "createdAt" ASC, id ASC`,
@@ -76,7 +76,7 @@ export async function getProduct(id) {
   if (!hasMasterDb() || !id) return null;
   const { rows } = await getPool().query(
     `SELECT id, "nicheId", name, slug, summary, description, outcome,
-            features, learnings, audience, level
+            features, learnings, audience, level, "coverImage"
        FROM products WHERE id = $1 LIMIT 1`,
     [id]
   );
