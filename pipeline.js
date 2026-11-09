@@ -65,8 +65,18 @@ export async function runPipeline({ videoId } = {}) {
   });
 
   let result;
+  let cycleComplete = false;
   try {
-    result = await generateAndPost(video, { account, categoryName, prompt, position: categoryRow.position, nicheId: account.niche_id || null });
+    const acs = store.listAccountCategories(account.id);
+    cycleComplete = acs.length > 0 && (contentIndex % acs.length) === (acs.length - 1);
+
+    result = await generateAndPost(video, { account, categoryName, prompt, position: categoryRow.position, nicheId: account.niche_id || null, cycleComplete });
+
+    // Advance product only after this account's full category pass completes
+    // (one product ebook runs through all categories, then move to the next).
+    if (cycleComplete && result && result.product && result.product.id) {
+      store.setAccountLastProduct(account.id, result.product.id);
+    }
 
     // Advance rotation only after a successful slot
     let nextIndex = accountIndex + 1;
@@ -85,7 +95,7 @@ export async function runPipeline({ videoId } = {}) {
   return { result, video: store.getVideo(video.id) || video };
 }
 
-async function generateAndPost(video, { account, categoryName, prompt, position, nicheId }) {
+async function generateAndPost(video, { account, categoryName, prompt, position, nicheId, cycleComplete }) {
   const outFile = `${account.name.replace(/[^a-zA-Z0-9-_]+/g, "-")}-${Date.now()}.mp4`;
 
   // Resolve the next product for this niche (cycles 1,2,3 -> 1,... using last_product_id).
@@ -168,17 +178,18 @@ async function generateAndPost(video, { account, categoryName, prompt, position,
   video = store.updateVideo(video.id, { video_path: videoPath });
 
   // Publishing off: the AI + renderer still ran, so keep the finished file and
-  // mark it ready. A manual retry can publish it later without re-rendering.
-  // (Do NOT advance last_product_id here: "berhasil terupload" means published.)
+  // mark it ready. Advance the product pointer only at category-cycle completion,
+  // same gate as publish (one ebook runs through all categories, then next).
   if (!store.isPublishingEnabled()) {
     video = store.updateVideo(video.id, { status: "ready", posted_at: null, last_error: null });
     console.log(`[pipeline] Publishing disabled; video #${video.id} rendered and left ready`);
+    if (cycleComplete && product) store.setAccountLastProduct(account.id, product.id);
     return { status: "ready", published: false, product: product ? { id: product.id, name: product.name } : null };
   }
 
   const result = await uploadWithRetry(video);
-  // Only advance the product pointer after a successful Buffer publish.
-  if (result && result.status === "success" && product) {
+  // Advance the product pointer at category-cycle completion, not per post.
+  if (cycleComplete && result && result.status === "success" && product) {
     store.setAccountLastProduct(account.id, product.id);
   }
   return { ...result, product: product ? { id: product.id, name: product.name } : null };
@@ -263,9 +274,5 @@ export async function runManualRetry(videoId) {
 
   video = store.updateVideo(video.id, { status: "pending", last_error: null });
   const result = await uploadWithRetry(video);
-  // Advance the product pointer when a previously-rendered video is published now.
-  if (result && result.status === "success" && video.product_id) {
-    store.setAccountLastProduct(account.id, video.product_id);
-  }
   return { result, video };
 }
