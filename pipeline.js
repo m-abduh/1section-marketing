@@ -150,7 +150,10 @@ async function generateAndPost(video, { account, categoryName, prompt, position,
   );
   if (dup) {
     store.deleteVideo(video.id);
-    return { status: "dup", skipped: true };
+    // Still advance the product pointer at category-cycle completion so a duplicate
+    // on the last slot doesn't trap the account on the same product forever.
+    if (cycleComplete && product) store.setAccountLastProduct(account.id, product.id);
+    return { status: "dup", skipped: true, product: product ? { id: product.id, name: product.name } : null };
   }
 
   const videoPath = await generateVideo(
