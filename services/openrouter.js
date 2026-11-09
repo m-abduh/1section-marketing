@@ -84,12 +84,13 @@ function extractJSON(text) {
 // final output contract on every request so "conclusion" is always generated,
 // regardless of which prompt revision is saved.
 const OUTPUT_CONTRACT = `FINAL OUTPUT CONTRACT (overrides any earlier output-format instruction):
-Return ONLY raw JSON (no markdown fences) with exactly these keys: "hook", "content", "caption", "conclusion", "cta", "recommendation", "source".
+Return ONLY raw JSON (no markdown fences) with exactly these keys: "hook", "content", "caption", "conclusion", "cta", "recommendation", "product_points", "source".
 "hook" = 7-14 words: a real-world problem + its actual cause, in second person (you/your). True and observable. Do not force a number, dollar amount, percentage, or time span into the hook. No third-person labels, invented stats, studies, quotes, names, dates, events, or fake scenarios. No contrived shock bait.
 "content" = the Markdown story body: 2-4 short beats showing how the cause creates the problem, in second person and short sentences. It MUST include at least one visual block (one-level blockquote, compact table, list/checklist, arrow chain, or formula); plain paragraphs alone are not enough. Do not put the fix, tip, or next step in content; it belongs in cta. Under about 45 words (table cells excluded).
 "cta" = ONE short imperative (max 10 words) naming the specific behavior that caused the problem and the replacement behavior to start. Do not use a vague awareness gap such as "stop ignoring X". Plain text, no markdown, no hashtags, no @mentions, no emojis, no URL or domain. It is printed next to the account link.
 "conclusion" = ONE short, plain-text sentence (max 18 words) stating the takeaway. Keep it proportional to the story; do not introduce a new number or scale the body did not establish. No markdown, no hashtags, no @mentions, no emojis, and do not repeat the hook word-for-word. It is printed on the dark end card under "THE BOTTOM LINE".
 "recommendation" = ONE warm, emotionally resonant but relaxed sentence (max 18 words) that gently connects the PRODUCT SOURCE to the feeling in the story, as a calm place to start. Speak to the reader's feeling (relief, clarity, ease), keep it human and easy to read. Never salesy or pushy, no hype, no "buy", no exclamation marks. Do NOT use generic filler like "A resource some people find helpful". If no product is given, suggest a helpful resource in the same warm, relaxed tone. Plain text only, no markdown, no hashtags, no @mentions, no emojis. Do not use em dashes or en dashes.
+"product_points" = an array of exactly 3 short benefits (each max 9 words) showing how the PRODUCT SOURCE helps with THIS post's specific problem/story (not generic product features). Tailor every point to the hook/content; keep the language easy, natural, and varied (not monotonous). No "You get/You will/You can" openers, no hype, no exclamation marks, no markdown, no hashtags, no emojis. Do not use em dashes or en dashes. If no product is given, give 3 gentle, relevant benefits for the kind of help suggested.
 "source" = If you based the problem on a CURRENT TRUSTED NEWS item, return that item's source/outlet name only (e.g. Reuters, BBC, CNBC). No link, no URL, no date. If you did not use a news item, return an empty string.`;
 
 function productBrief(product) {
@@ -121,7 +122,7 @@ export async function generatePost({ accountName, categoryName, prompt, product,
 
   const src = (prompt && prompt.trim())
     ? prompt.trim()
-    : `The topic is up to you — pick something timely and relevant to ${categoryName}.`;
+    : `The topic is up to you, pick something timely and relevant to ${categoryName}.`;
 
   const { niche, topics } = topicsForAccount(accountName);
   const nicheLabel = (product && product.nicheId) ? niche : niche;
@@ -146,7 +147,7 @@ ${topics.map((t) => `- ${t}`).join("\n")}
   const userPrompt = `Video channel name: ${accountName}
 ${topicBlock}${productBlock}${newsBlock}Category: ${categoryName}
 
-SOURCE INSTRUCTIONS (these define the content style, structure, and format — follow them first):
+SOURCE INSTRUCTIONS (these define the content style, structure, and format, follow them first):
 ${src}
 
 ${base}
@@ -172,6 +173,18 @@ ${OUTPUT_CONTRACT}`;
     parsed.recommendation || parsed.rec || parsed.suggestion || ""
   ).replace(/[\u2013\u2014]/g, ", ").replace(/\s+/g, " ").trim();
 
+  const productPointsRaw = Array.isArray(parsed.product_points)
+    ? parsed.product_points
+    : Array.isArray(parsed.productPoints)
+      ? parsed.productPoints
+      : Array.isArray(parsed.points)
+        ? parsed.points
+        : [];
+  const product_points = productPointsRaw
+    .map((p) => String(p || "").replace(/[\u2013\u2014]/g, ", ").replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .slice(0, 3);
+
   let source = String(parsed.source || parsed.news_source || "")
     .replace(/https?:\/\/\S+/g, "")
     .replace(/[\u2013\u2014]/g, ", ")
@@ -191,6 +204,7 @@ ${OUTPUT_CONTRACT}`;
     conclusion,
     cta,
     recommendation,
+    product_points,
     source,
     content_json: JSON.stringify(parsed),
   };

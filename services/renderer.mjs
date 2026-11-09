@@ -42,29 +42,26 @@ function renderTemplate(tpl, data) {
   );
 }
 
-// Light "paper" backgrounds — subtle tints that keep a clean, readable surface.
-// Only the background varies now (no colored content boxes).
+// Dark backgrounds - deep base tones; the template layers real linear gradients on top.
 const PAPER_FILLS = [
-  "#f7f5f0",
-  "#f5f4f2",
-  "#f3f2ee",
-  "#f6f1ea",
-  "#efefec",
-  "#f2f0ec",
-  "#f4f2ef",
-  "#f1f0ee",
+  "#0b0d12",
+  "#0e1118",
+  "#10131b",
+  "#0d1016",
+  "#121621",
+  "#0f1219",
+  "#11141c",
+  "#0c0f15",
 ];
 
-// Accent-only palettes: used for rules, dots, numbers, links, and the CTA
-// underline. They never become the dominant background, so every render can
-// feel different without turning into a color block.
+// Accent-only palettes for a dark surface: brighter accent + soft tinted fills/glows.
 const ACCENT_PALETTES = [
-  { accent: "#e05a33", ink: "#a83a1c", soft: "rgba(224,90,51,.10)", glow: "rgba(224,90,51,.15)", ctaGlow: "rgba(224,90,51,.22)" },
-  { accent: "#0f766e", ink: "#0b5d56", soft: "rgba(15,118,110,.10)", glow: "rgba(15,118,110,.14)", ctaGlow: "rgba(15,118,110,.24)" },
-  { accent: "#4f46e5", ink: "#3730a3", soft: "rgba(79,70,229,.10)", glow: "rgba(79,70,229,.14)", ctaGlow: "rgba(79,70,229,.24)" },
-  { accent: "#9d3c72", ink: "#7a2d58", soft: "rgba(157,60,114,.10)", glow: "rgba(157,60,114,.14)", ctaGlow: "rgba(157,60,114,.24)" },
-  { accent: "#5f6b2a", ink: "#48511f", soft: "rgba(95,107,42,.10)", glow: "rgba(95,107,42,.14)", ctaGlow: "rgba(95,107,42,.22)" },
-  { accent: "#b45309", ink: "#8a3f07", soft: "rgba(180,83,9,.10)", glow: "rgba(180,83,9,.14)", ctaGlow: "rgba(180,83,9,.22)" },
+  { accent: "#ff7a45", ink: "#ff9a70", soft: "rgba(255,122,69,.14)", glow: "rgba(255,122,69,.22)", ctaGlow: "rgba(255,122,69,.32)" },
+  { accent: "#2dd4bf", ink: "#5eead4", soft: "rgba(45,212,191,.14)", glow: "rgba(45,212,191,.20)", ctaGlow: "rgba(45,212,191,.30)" },
+  { accent: "#818cf8", ink: "#a5b4fc", soft: "rgba(129,140,248,.14)", glow: "rgba(129,140,248,.22)", ctaGlow: "rgba(129,140,248,.32)" },
+  { accent: "#f472b6", ink: "#f9a8d4", soft: "rgba(244,114,182,.14)", glow: "rgba(244,114,182,.22)", ctaGlow: "rgba(244,114,182,.32)" },
+  { accent: "#a3e635", ink: "#bef264", soft: "rgba(163,230,53,.14)", glow: "rgba(163,230,53,.18)", ctaGlow: "rgba(163,230,53,.28)" },
+  { accent: "#fbbf24", ink: "#fcd34d", soft: "rgba(251,191,36,.14)", glow: "rgba(251,191,36,.20)", ctaGlow: "rgba(251,191,36,.30)" },
 ];
 
 const escapeHtml = (s) =>
@@ -84,7 +81,7 @@ if(document.fonts&&document.fonts.ready){document.fonts.ready.then(()=>{try{__fi
 
 // Build the single full README-style markdown body for the slide:
 //   ## {hook}\n\n{content body}
-// No H1 banner or numeral is shown — the hook/headline and its discussion
+// No H1 banner or numeral is shown: the hook/headline and its discussion
 // render as one continuous, focus-on-content markdown document.
 export function buildMarkdown({ hook, body }) {
   return `## ${(hook || "").trim()}\n\n` + (body || "").trim();
@@ -107,7 +104,7 @@ export function chainifyMarkdown(md) {
 
   // Chain steps render independently, so emphasis that wraps a whole step (or
   // opens on one chain line and closes on another) gets cut in half by the
-  // split. Detect it, strip the markers and re-apply them per step — otherwise
+  // split. Detect it, strip the markers and re-apply them per step, otherwise
   // literal ** / * end up printed on the slide.
   const cleanStep = (raw) => {
     let text = strip(raw);
@@ -326,7 +323,7 @@ export function normalizeMarkdownHtml(html) {
 }
 
 export async function renderPost(
-  { hook, content, category, account, account_link, content_text, conclusion, cta, recommendation, source, product_name, product_image, product_features, product_learnings, product_outcome, niche, index },
+  { hook, content, category, account, account_link, content_text, conclusion, cta, recommendation, source, product_name, product_image, product_features, product_learnings, product_outcome, product_points, niche, index },
   outputPath
 ) {
   const htmlTpl = readFileSync(join(BUILDER, "unified.html"), "utf-8");
@@ -360,6 +357,11 @@ export async function renderPost(
   const accountHandle = String(account || "").replace(/^@/, "").replace(/^1section\./i, "");
   const accountInitial = (accountLinkHead || accountHandle || "?").trim().charAt(0).toUpperCase();
   const nicheLabel = String(niche || accountLinkHead || accountHandle || "1section").trim();
+  const nicheSlug = String(nicheLabel || accountHandle || "1section")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "1section";
+  const accountHandleDisplay = `1section.${nicheSlug}`;
 
   // The CTA card closes the video with the takeaway. If the AI did not return a
   // conclusion (older stored posts), fall back to the hook so the card is never blank.
@@ -402,7 +404,9 @@ export async function renderPost(
   const softSolution = cleanRec(recommendation) ||
     (productName ? `If this feels familiar, ${productName} can bring a little calm and clarity to it.` : "If this feels familiar, there is a gentle place to find some clarity in the link below.");
 
-  // Points shown to the right of the book: BENEFITS/what you get (not features), tailored to the post.
+  // Points shown to the right of the book: BENEFITS/what you get (not features),
+  // tailored to THIS post. Prefer AI-generated points (dynamic, content-specific),
+  // then fall back to product outcome/learnings.
   const toPointList = (v) => {
     if (Array.isArray(v)) return v.map((x) => String(x || "").trim()).filter(Boolean);
     if (typeof v === "string" && v.trim()) {
@@ -428,22 +432,25 @@ export async function renderPost(
     if (t.length > 80) t = t.slice(0, 77).replace(/[\s,;:.]+\S*$/, "");
     return t;
   };
-  const rawBenefits = [
-    ...(product_outcome ? [String(product_outcome).trim()] : []),
-    ...toPointList(product_learnings),
-  ].filter(Boolean);
-  const productPoints = [];
+  const aiBenefits = toPointList(product_points);
+  const rawBenefits = aiBenefits.length
+    ? aiBenefits
+    : [
+        ...(product_outcome ? [String(product_outcome).trim()] : []),
+        ...toPointList(product_learnings),
+      ].filter(Boolean);
+  const renderedPoints = [];
   const seen = new Set();
   const addPoint = (text) => {
     const b = cleanBenefit(text);
     const key = b.toLowerCase();
     if (!b || seen.has(key)) return;
     seen.add(key);
-    productPoints.push(b);
+    renderedPoints.push(b);
   };
-  for (const p of rawBenefits) { addPoint(p); if (productPoints.length >= 3) break; }
+  for (const p of rawBenefits) { addPoint(p); if (renderedPoints.length >= 3) break; }
   // Fallback: natural benefits framed around the post's problem (never product features).
-  if (productPoints.length < 3) {
+  if (renderedPoints.length < 3) {
     const nicheWord = String(nicheLabel || "this").trim().toLowerCase();
     const hookHint = String(hook || "").replace(/[\u2013\u2014]/g, ", ").replace(/\s+/g, " ").trim();
     const shortHook = hookHint.length > 44 ? hookHint.slice(0, 41).replace(/\s+\S*$/, "") : hookHint;
@@ -452,9 +459,9 @@ export async function renderPost(
       `Easy steps that fit into real life`,
       `A calm sense of what to do next`,
     ];
-    for (const f of fallbacks) { addPoint(f); if (productPoints.length >= 3) break; }
+    for (const f of fallbacks) { addPoint(f); if (renderedPoints.length >= 3) break; }
   }
-  productPoints.length = Math.min(productPoints.length, 3);
+  renderedPoints.length = Math.min(renderedPoints.length, 3);
   const benefitsTitle = "Why this E-book?";
 
   const data = {
@@ -463,6 +470,7 @@ export async function renderPost(
     source: escapeHtml(sourceLabel),
     category: escapeHtml(category || ""),
     account: escapeHtml(account || ""),
+    account_handle: escapeHtml(accountHandleDisplay),
     account_initial: escapeHtml(accountInitial),
     account_link: escapeHtml(link),
     account_link_head: escapeHtml(accountLinkHead),
@@ -477,7 +485,7 @@ export async function renderPost(
     // Conditionals for the template engine (renders block when array is non-empty).
     _product_has_image: productImage ? [1] : [],
     _product_no_image: productImage ? [] : [1],
-    product_points: productPoints.map((t) => ({ text: escapeHtml(t) })),
+    product_points: renderedPoints.map((t) => ({ text: escapeHtml(t) })),
     soft_solution: escapeHtml(softSolution),
     bg_fill: bg,
     accent: accentPalette.accent,
@@ -487,8 +495,6 @@ export async function renderPost(
     accent_cta_glow: accentPalette.ctaGlow,
   };
   let html = renderTemplate(htmlTpl, data);
-
-  html = html.replace("--paper:#f7f5f0", `--paper:${bg}`);
 
   // Fit-to-frame: scale the markdown wrapper down only when it overflows.
   html = html.replace(
