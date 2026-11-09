@@ -200,19 +200,22 @@ export const store = {
     this.syncAllAccountCategories();
   },
 
-  // Seed categories: seed.mjs is the canonical source. Ensures each seed
-  // category exists and keeps its default_prompt in sync with the seed file.
-  // Pre-rework legacy seeds (that left the list) are removed so the rotation
-  // only ever contains the current set.
+  // Seed categories: seed.mjs is the canonical source. On a fresh DB (no
+  // categories) bootstrap all seeds. On an existing DB only update prompts for
+  // categories that still exist and remove known legacy names — never re-add a
+  // seed the user deleted (deletions must stick across restarts).
   seedCategories() {
+    const count = db.prepare("SELECT COUNT(*) AS c FROM categories").get().c;
     const upsertPrompt = db.prepare("UPDATE categories SET default_prompt=? WHERE id=?");
+    if (count === 0) {
+      for (const s of CATEGORY_SEEDS) {
+        this.createCategory({ name: s.name, default_prompt: s.default_prompt });
+      }
+      return;
+    }
     for (const s of CATEGORY_SEEDS) {
       const existing = db.prepare("SELECT * FROM categories WHERE name=?").get(s.name);
-      if (!existing) {
-        this.createCategory({ name: s.name, default_prompt: s.default_prompt });
-        continue;
-      }
-      upsertPrompt.run(s.default_prompt, existing.id);
+      if (existing) upsertPrompt.run(s.default_prompt, existing.id);
     }
     // Delete categories that used to be seeds but are gone from the new set.
     // Only touches known legacy names, never user-created categories.
