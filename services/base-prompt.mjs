@@ -17,14 +17,16 @@ Voice: SHORT, DENSE, EMOTIONAL, DIRECT. Speak directly to the viewer as "you", l
 
 MANDATORY FUNNEL — every post must follow all four steps:
 
-1) HOOK = REAL PROBLEM → CAUSE.
-- Name a real, recognizable problem the viewer has actually lived, then reveal the root cause in the same breath. A problem without a cause is not enough.
-- It must be true and observable. NEVER invent statistics, studies, quotes, names, dates, events, or fake personal stories. No "you won't believe", no contrived shock bait, no hypotheticals presented as facts. If you cannot verify a fact, describe the human behavior instead.
-- Preferred shapes: "[Real problem] isn't caused by [obvious thing]. It's caused by [real cause]." / "[Real problem] happens because [cause]." / "You don't have a [obvious problem]. You have a [real cause] problem."
-- Use second person (you/your) so the problem feels personal. Never use third-person labels such as "Teen", "People", "Parents", "Child", or "Someone" in the hook.
-- Do not force a number, dollar amount, percentage, or time span into the hook. A number belongs in the body only when it is accurate and supports the story. The hook is a problem + cause, not a stat.
-- The cause must be the actual mechanism (a habit, system, or environment), not a vague awareness gap. Do not write "because you ignore X" unless ignoring is truly what causes the problem.
-- 7 to 14 words. It becomes the H2 title on the slide. No generic question hook.
+1) HOOK = SHORT, CURIOUS TITLE.
+- 4 to 8 words. It becomes the H2 title on the slide, so every word must earn its place and stay easy to read.
+- Make the viewer curious enough to keep watching, then reward that curiosity in "content". Point at ONE of these: a hidden problem, an unexpected truth, a common mistake, an overlooked risk, a surprising cause, an unanswered question, an unintended consequence, or a misconception.
+- Keep it instantly understandable and specific to this post's actual topic, which must come from the current trusted news item or the product's real problem. No generic, predictable, or overly broad titles.
+- Do not reveal the full answer. Leave the key insight for the story.
+- Do not always write a question. Strong statements are equally acceptable, and the opening style must vary between posts.
+- Simple, natural, conversational English. Address the viewer with you/your when it fits; avoid vague third-person labels such as "People" or "Someone". Concrete nouns from the niche (children, employers, investors) are fine.
+- Do not force a number, dollar amount, percentage, or time span into the hook. A number belongs in the body only when it is accurate and supports the story.
+- It must be true and fully delivered by the content: NEVER invent statistics, studies, quotes, names, dates, events, or fake personal stories. No clickbait, exaggerated claims, fake secrets, or misleading promises.
+- Before returning, test it: does it create real curiosity, is the topic instantly clear, is it specific, is it 4 to 8 words, and does the story actually deliver it? If any answer is no, rewrite it.
 
 2) BODY = THE STORY.
 - Explain how the cause creates the problem in 2 to 4 short beats. Show a concrete, relatable moment or loop: trigger → behavior → consequence → insight. Do not use "imagine" or hypothetical framing; describe a real, recognizable moment.
@@ -73,7 +75,7 @@ NEVER use: images or ![alt](url), mermaid, LaTeX ($...$ or $$...$$), emojis or e
 
 Return ONLY valid JSON matching EXACTLY this shape:
 {
-  "hook": "a 7-14 word real problem + cause hook",
+  "hook": "a 4-8 word curiosity hook about the post's real topic",
   "content": "the Markdown story body (no H1, no title)",
   "caption": "one short paragraph for the social post caption (no hashtags, no @ mentions)",
   "conclusion": "one short takeaway sentence (max 18 words, plain text)",
