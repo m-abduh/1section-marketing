@@ -18,6 +18,9 @@ Until the question changes:
 > "What problem can be solved?"
 
 Money becomes the **result**, not the goal.`,
+    price: "$29",
+    compare_price: "$49",
+    discount: "40% OFF",
   },
   {
     name: "Myth",
@@ -204,7 +207,27 @@ async function main() {
     const out = join(OUT, `${s.name}-${ts}.mp4`);
     console.log(`\n[${i}/${SAMPLES.length}] Rendering "${s.name}" (${s.hook}) ...`);
     try {
-      await renderPost({ hook: s.hook, content: s.content, category: s.name, account: ACCOUNT, account_link: ACCOUNT_LINK, conclusion: CONCLUSIONS[s.name], cta: CTAS[s.name] }, out);
+      await renderPost(
+        {
+          hook: s.hook,
+          content: s.content,
+          category: s.name,
+          account: ACCOUNT,
+          account_link: ACCOUNT_LINK,
+          conclusion: CONCLUSIONS[s.name],
+          cta: CTAS[s.name],
+          product_name: "Money Clarity Playbook",
+          product_points: [
+            "Spot the real money leak fast",
+            "Replace guesswork with simple steps",
+            "Build calm progress you can keep",
+          ],
+          price: s.price,
+          compare_price: s.compare_price,
+          discount: s.discount,
+        },
+        out
+      );
       console.log(`  ✅ ${s.name} done in ${((Date.now() - ts) / 1000).toFixed(1)}s -> ${out}`);
     } catch (e) {
       console.error(`  ❌ ${s.name} FAILED: ${e.message}`);
