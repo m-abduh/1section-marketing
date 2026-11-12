@@ -323,7 +323,7 @@ export function normalizeMarkdownHtml(html) {
 }
 
 export async function renderPost(
-  { hook, content, category, account, account_link, content_text, conclusion, cta, recommendation, source, product_name, product_image, product_features, product_learnings, product_outcome, product_points, niche, index },
+  { hook, content, category, account, account_link, content_text, conclusion, cta, recommendation, source, product_name, product_image, product_features, product_learnings, product_outcome, product_points, niche, index, price, compare_price, discount, currency },
   outputPath
 ) {
   const htmlTpl = readFileSync(join(BUILDER, "unified.html"), "utf-8");
@@ -390,6 +390,93 @@ export async function renderPost(
   const productImage = String(product_image || "").trim();
   const escAttr = (s) =>
     String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const formatMoney = (v, cur) => {
+    if (v == null || v === "") return "";
+    if (typeof v === "string") {
+      const s = v.replace(/\s+/g, " ").trim();
+      if (!s) return "";
+      if (/free/i.test(s) || /[$€£¥₹]|rp|idr|usd|eur|gbp/i.test(s)) return s;
+      const n = Number(s.replace(/,/g, ""));
+      if (Number.isFinite(n)) v = n; else return s;
+    }
+    if (typeof v !== "number" || !Number.isFinite(v)) return "";
+    if (v === 0) return "Free";
+    const c = String(cur || "USD").toUpperCase();
+    // Heuristic: integer amounts >= 100 from payment-style fields are commonly cents.
+    const amount = Number.isInteger(v) && Math.abs(v) >= 100 ? v / 100 : v;
+    const symbols = { USD: "$", EUR: "€", GBP: "£", JPY: "¥", INR: "₹", IDR: "Rp " };
+    const sym = symbols[c];
+    const whole = Math.abs(amount - Math.round(amount)) < 0.001;
+    const num = whole ? String(Math.round(amount)) : amount.toFixed(2).replace(/\.00$/, "");
+    if (sym) return `${sym}${num}`;
+    return `${c} ${num}`;
+  };
+  const cleanPrice = (v) => {
+    if (v == null || v === "") return "";
+    const s = String(v).replace(/\s+/g, " ").trim();
+    if (!s) return "";
+    if (/free/i.test(s)) return s;
+    if (/[$€£¥₹]|rp|idr|usd|eur|gbp/i.test(s)) return s;
+    const n = Number(s.replace(/,/g, ""));
+    return Number.isFinite(n) ? formatMoney(n, currency) : s;
+  };
+  const cleanDiscount = (v) => {
+    if (v == null || v === "") return "";
+    let s = String(v).replace(/\s+/g, " ").trim();
+    if (!s) return "";
+    s = s.replace(/^[-–—]+/, "").trim();
+    if (!s) return "";
+    if (/save/i.test(s)) {
+      const m = s.match(/\d+(?:\.\d+)?%?/);
+      if (m) {
+        const n = m[0].endsWith("%") ? m[0] : `${m[0]}%`;
+        return `${n} OFF`;
+      }
+      s = s.replace(/\bsave\b/gi, "").trim();
+    }
+    if (/off$/i.test(s)) return s.toUpperCase().replace(/%?\s*OFF$/i, (m) => (/%/.test(m) ? m.toUpperCase() : `% OFF`)).replace(/%%/g, "%");
+    if (/off/i.test(s)) {
+      const m = s.match(/\d+(?:\.\d+)?%?/);
+      return m ? `${m[0].endsWith("%") ? m[0] : `${m[0]}%`} OFF` : s;
+    }
+    if (/%/.test(s)) {
+      const m = s.match(/\d+(?:\.\d+)?%/);
+      return m ? `${m[0]} OFF` : `${s} OFF`;
+    }
+    const n = Number(String(s).replace(/%/g, "").replace(/,/g, ""));
+    return Number.isFinite(n) ? `${n}% OFF` : `${s} OFF`;
+  };
+  const toNum = (v) => {
+    if (v == null || v === "") return NaN;
+    if (typeof v === "number") return v;
+    const n = Number(String(v).replace(/[^0-9.-]/g, ""));
+    return Number.isFinite(n) ? n : NaN;
+  };
+  let priceText = cleanPrice(price);
+  let comparePriceText = cleanPrice(compare_price);
+  let discountText = cleanDiscount(discount);
+  const pNum = toNum(price), cNum = toNum(compare_price);
+  if (!discountText && Number.isFinite(pNum) && Number.isFinite(cNum) && cNum > pNum) {
+    const pct = Math.round((1 - pNum / cNum) * 100);
+    if (pct > 0) discountText = `${pct}% OFF`;
+  }
+  // Hide redundant compare/discount when there is no real discount (e.g. free vs $0 compare)
+  if (Number.isFinite(pNum) && Number.isFinite(cNum) && cNum <= pNum) {
+    comparePriceText = "";
+    discountText = "";
+  }
+  // Fallback sample pricing only when no product/pricing data was provided at all
+  if (!priceText && !comparePriceText && !discountText && price == null && compare_price == null && discount == null) {
+    priceText = "$29";
+    comparePriceText = "$49";
+    discountText = "40% OFF";
+  }
+  const priceParts = [];
+  if (priceText) priceParts.push(`<span class="cta-price">${escapeHtml(priceText)}</span>`);
+  if (comparePriceText) priceParts.push(`<span class="cta-compare-price">${escapeHtml(comparePriceText)}</span>`);
+  if (discountText) priceParts.push(`<span class="cta-discount">${escapeHtml(discountText)}</span>`);
+  const priceBlockHtml = priceParts.length ? `<div class="cta-price-block">${priceParts.join("")}</div>` : "";
 
   // Dynamic, emotional-but-relaxed recommendation (AI-generated per post); fallback is soft & human.
   const cleanRec = (value) => {
@@ -487,6 +574,7 @@ export async function renderPost(
     _product_no_image: productImage ? [] : [1],
     product_points: renderedPoints.map((t) => ({ text: escapeHtml(t) })),
     soft_solution: escapeHtml(softSolution),
+    price_block: priceBlockHtml,
     bg_fill: bg,
     accent: accentPalette.accent,
     accent_ink: accentPalette.ink,

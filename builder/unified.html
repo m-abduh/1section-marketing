@@ -194,6 +194,10 @@ html,body{font-family:'Satoshi',system-ui,sans-serif;background:var(--paper);col
 .cta-book-fallback .cta-book-name{font-size:28px;font-weight:800;line-height:1.2;letter-spacing:-.4px;color:var(--ink);text-align:left;text-wrap:balance}
 .cta-benefits{display:flex;flex-direction:column;gap:16px;flex:1;min-width:0;text-align:left}
 .cta-benefits-title{font-size:24px;font-weight:800;line-height:1.2;letter-spacing:.02em;text-transform:none;color:var(--accent);text-wrap:balance}
+.cta-price-block{display:flex;flex-wrap:wrap;align-items:center;gap:12px 14px;margin-top:-2px}
+.cta-price{font-size:44px;font-weight:900;line-height:1;letter-spacing:-1px;color:var(--accent-ink)}
+.cta-compare-price{font-size:28px;font-weight:700;line-height:1.1;letter-spacing:-.3px;color:var(--muted);text-decoration:line-through;text-decoration-thickness:3px}
+.cta-discount{display:inline-flex;align-items:center;padding:6px 14px;border-radius:999px;background:var(--accent-soft);border:1px solid rgba(255,255,255,.12);font-size:22px;font-weight:800;line-height:1.1;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink)}
 .cta-points{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
 .cta-points li{display:flex;align-items:flex-start;gap:14px;font-size:31px;font-weight:600;line-height:1.4;letter-spacing:-.2px;color:#d7dce5;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
 .cta-points li::before{content:"";flex:0 0 auto;width:9px;height:9px;border-radius:50%;background:var(--accent);margin-top:17px;box-shadow:0 0 0 4px var(--accent-soft)}
@@ -286,6 +290,7 @@ html,body{font-family:'Satoshi',system-ui,sans-serif;background:var(--paper);col
         </div>
         <div class="cta-benefits">
           <div class="cta-benefits-title">{{benefits_title}}</div>
+          {{price_block}}
           <ul class="cta-points">
             {{#each product_points}}<li>{{text}}</li>{{/each}}
           </ul>
@@ -342,8 +347,9 @@ window.__timelines=window.__timelines||{};
   tl.fromTo(".cta-solution",{y:26,opacity:0},{y:0,opacity:1,duration:.55,ease:"power2.out"},15.45);
   tl.fromTo(".cta-book",{x:-36,opacity:0,scale:.97},{x:0,opacity:1,scale:1,duration:.6,ease:"power2.out"},15.65);
   tl.fromTo(".cta-benefits-title",{y:14,opacity:0},{y:0,opacity:1,duration:.4,ease:"power2.out"},15.75);
-  tl.fromTo(".cta-points li",{x:28,opacity:0},{x:0,opacity:1,duration:.45,stagger:.14,ease:"power2.out"},15.85);
-  tl.fromTo(".cta-link-block",{y:14,opacity:0},{y:0,opacity:1,duration:.45,ease:"power2.out"},16.35);
+  tl.fromTo(".cta-price-block",{y:14,opacity:0},{y:0,opacity:1,duration:.4,ease:"power2.out"},15.82);
+  tl.fromTo(".cta-points li",{x:28,opacity:0},{x:0,opacity:1,duration:.45,stagger:.14,ease:"power2.out"},15.9);
+  tl.fromTo(".cta-link-block",{y:14,opacity:0},{y:0,opacity:1,duration:.45,ease:"power2.out"},16.4);
   window.__timelines["unified"]=tl;
 })();
 </script>
