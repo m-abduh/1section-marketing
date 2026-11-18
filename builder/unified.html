@@ -60,7 +60,6 @@ html,body{font-family:'Satoshi',system-ui,sans-serif;background:var(--paper);col
 .hook{font-size:56px;font-weight:900;line-height:1.04;letter-spacing:-1.6px;margin:0 0 24px;max-width:900px;text-wrap:balance;color:var(--ink)}
 .hook strong{font-weight:900}
 .hook em{font-style:italic}
-.hook-cursor{display:inline-block;margin-left:2px;color:var(--accent);font-weight:700;vertical-align:baseline}
 
 /* story header */
 .story-head{display:flex;align-items:center;gap:14px;margin:0 0 18px}
@@ -259,7 +258,7 @@ html,body{font-family:'Satoshi',system-ui,sans-serif;background:var(--paper);col
           <span class="info-category">{{category}}</span>
           <span class="info-source">{{source}}</span>
         </div>
-        <h1 class="hook"><span class="hook-text">{{hook}}</span><span class="hook-cursor">|</span></h1>
+        <h1 class="hook">{{hook}}</h1>
         <div class="story-head">
           <span class="story-label">Why it keeps happening</span>
           <span class="story-line"></span>
@@ -320,9 +319,6 @@ window.__timelines=window.__timelines||{};
   tl.set(cta,{autoAlpha:0,scale:1.08,y:70,filter:"blur(14px)"},0);
   tl.set(main,{transformOrigin:"50% 40%"} ,0);
   tl.set(cta,{transformOrigin:"50% 50%"} ,0);
-  // Hook typing cursor (seek-safe): blink at end of sentence.
-  tl.set(".hook-cursor",{opacity:1},0);
-  tl.to(".hook-cursor",{opacity:0,duration:.01,repeat:29,repeatDelay:.5,yoyo:true},0);
   // Ambient bg motion (seek-safe): 0-3s fast->slow (expo.out), 3-20s continues slow & linear (no stop/restart). Zoomed to hide edges.
   tl.fromTo("#bg-tint",
     {x:320,y:220,scale:1.35,rotation:-30},
