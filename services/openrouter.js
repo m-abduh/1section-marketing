@@ -72,30 +72,28 @@ async function askAI(prompt, retries = 3) {
 }
 
 function extractJSON(text) {
-  let cleaned = text.trim();
-  cleaned = cleaned.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+  let cleaned = String(text || "").trim();
+  cleaned = cleaned.replace(/^```json\s*/i, "").replace(/\s*```$/i, "");
   const start = cleaned.indexOf("{");
   const end = cleaned.lastIndexOf("}");
   if (start === -1 || end === -1) throw new Error("No JSON found in AI response");
   return JSON.parse(cleaned.slice(start, end + 1));
 }
 
-// The base prompt is stored in the DB and may be an older revision. Append the
-// final output contract on every request so "conclusion" is always generated,
-// regardless of which prompt revision is saved.
-const OUTPUT_CONTRACT = `FINAL OUTPUT CONTRACT (overrides any earlier output-format instruction):
-Return ONLY raw JSON (no markdown fences) with exactly these keys: "hook", "content", "caption", "conclusion", "cta", "recommendation", "product_points", "source".
-"hook" = 4 to 8 words: one short, curiosity-driven title about a real problem in this niche, instantly understandable, specific, and easy to read. It may be a statement or a question (do not default to questions) and must not reveal the answer; the story delivers it. Prefer you/your when it fits and avoid vague labels like "People" or "Someone" (concrete niche nouns such as children, employers, or investors are fine). True and delivered by the content. Do not force a number, dollar amount, percentage, or time span into the hook. No invented stats, studies, quotes, names, dates, events, or fake scenarios. No clickbait, exaggerated claims, fake secrets, or contrived shock bait.
-"content" = the Markdown story body: 2-4 short beats showing how the cause creates the problem, in second person and short sentences. It MUST include at least one visual block (one-level blockquote, compact table, list/checklist, arrow chain, or formula); plain paragraphs alone are not enough. Do not put the fix, tip, or next step in content; it belongs in cta. Under about 45 words (table cells excluded).
-"cta" = ONE short imperative (max 10 words) naming the specific behavior that caused the problem and the replacement behavior to start. Do not use a vague awareness gap such as "stop ignoring X". Plain text, no markdown, no hashtags, no @mentions, no emojis, no URL or domain. It is printed next to the account link.
-"conclusion" = ONE short, plain-text sentence (max 18 words) stating the takeaway. Keep it proportional to the story; do not introduce a new number or scale the body did not establish. No markdown, no hashtags, no @mentions, no emojis, and do not repeat the hook word-for-word. It is printed on the dark end card under "THE BOTTOM LINE".
-"recommendation" = ONE warm, emotionally resonant but relaxed sentence (max 18 words) that gently connects the PRODUCT SOURCE to the feeling in the story, as a calm place to start. Speak to the reader's feeling (relief, clarity, ease), keep it human and easy to read. Never salesy or pushy, no hype, no "buy", no exclamation marks. Do NOT use generic filler like "A resource some people find helpful". If no product is given, suggest a helpful resource in the same warm, relaxed tone. Plain text only, no markdown, no hashtags, no @mentions, no emojis. Do not use em dashes or en dashes.
-"product_points" = an array of exactly 3 short benefits (each max 9 words) showing how the PRODUCT SOURCE helps with THIS post's specific problem/story (not generic product features). Tailor every point to the hook/content; keep the language easy, natural, and varied (not monotonous). No "You get/You will/You can" openers, no hype, no exclamation marks, no markdown, no hashtags, no emojis. Do not use em dashes or en dashes. If no product is given, give 3 gentle, relevant benefits for the kind of help suggested.
-"source" = If you based the problem on a CURRENT TRUSTED NEWS item, return that item's source/outlet name only (e.g. Reuters, BBC, CNBC). No link, no URL, no date. If you did not use a news item, return an empty string.`;
+const OUTPUT_CONTRACT = `FINAL OUTPUT CONTRACT (overrides older format):
+Return ONLY raw JSON (no markdown fences) with keys: "hook","content","visual","caption","conclusion","cta","recommendation","product_points","source".
+- "content": ONE short sentence (real felt problem, psychological, relatable, no "you/your" focus, no intro/CTA). Under ~18 words.
+- "visual": {"block_id":"reality-card","block":{"main":"ONE sentence with [[highlight]] around 2-5 core words"}}. Use only this single layout for all regular content.
+- "hook": 2-6 word label (brand/niche/context), not a sentence.
+- "caption": 20-35 words, human, no hashtags, no @mentions.
+- "conclusion": ONE clear plain-text sentence (max ~14 words) that explains the content's point/takeaway for the footer. It must make the content clearer, not repeat it verbatim.
+- "cta": "" (empty). "recommendation": "" (empty). "product_points": [] (empty) for regular content.
+- "source": news outlet name only if used, else "".
+No intro, no CTA, no sales copy in content/visual. Stay true to product, niche, category.`;
 
 function productBrief(product) {
   if (!product) return "";
-  const lines = [`Product (base the post on this product's problem/solution; stay true to it): ${product.name}`];
+  const lines = [`Product (relate the felt problem to this product's real context; do not sell in content): ${product.name}`];
   if (product.summary) lines.push(`Summary: ${String(product.summary).trim()}`);
   if (product.description) lines.push(`Description: ${String(product.description).trim()}`);
   if (product.outcome) lines.push(`Outcome: ${String(product.outcome).trim()}`);
@@ -107,25 +105,44 @@ function productBrief(product) {
   return lines.join("\n");
 }
 
-/**
- * Generate post content (copywriting + caption) for an account+category.
- * @param {object} opts
- * @param {string} opts.accountName  Buffer account name
- * @param {string} opts.categoryName  Category label (e.g. "stat", "story")
- * @param {string} opts.prompt  Per-account-category AI prompt (customizable)
- * @param {object} [opts.product]  Master-DB product to base the content on
- * @param {Array}  [opts.newsItems] Current trusted-news items to ground the problem
- * @returns {{hook, content, caption, conclusion, cta, recommendation, content_json}}
- */
-export async function generatePost({ accountName, categoryName, prompt, product, newsItems = [] }) {
-  const base = loadBasePrompt();
+export async function generatePost({ accountName, categoryName, prompt, product, newsItems = [], salesMode = false }) {
+  if (salesMode) {
+    const name = String(product?.name || "this guide").trim() || "this guide";
+    const niche = String(accountName || "1section").replace(/^1section\./i, "") || "1section";
+    const learnings = Array.isArray(product?.learnings) ? product.learnings.filter(Boolean).map(s => String(s).trim()).slice(0, 3) : [];
+    const fallbackPts = [
+      `Clear guidance for real ${niche} challenges`,
+      "Simple steps that fit daily life",
+      "Calm progress that feels doable",
+    ];
+    const points = (learnings.length ? learnings : fallbackPts).slice(0, 3);
+    const hook = `Get ${name}`;
+    const conclusion = `A clearer path for ${niche} starts here.`;
+    const cta = "Get the guide in bio";
+    const recommendation = `A simple guide to help with ${niche}, one step at a time.`;
+    const content = `Sales CTA for ${name}`;
+    return {
+      hook,
+      content,
+      caption: `${name} for ${niche}. Link in bio. #1section`,
+      conclusion,
+      cta,
+      recommendation,
+      product_points: points,
+      visual: null,
+      sales_mode: true,
+      source: "",
+      content_json: JSON.stringify({ hook, content, conclusion, cta, recommendation, product_points: points, sales_mode: true }),
+    };
+  }
 
+  const base = loadBasePrompt();
   const src = (prompt && prompt.trim())
     ? prompt.trim()
     : `The topic is up to you, pick something timely and relevant to ${categoryName}.`;
 
   const { niche, topics } = topicsForAccount(accountName);
-  const nicheLabel = (product && product.nicheId) ? niche : niche;
+  const nicheLabel = niche;
   const topicBlock = topics.length
     ? `Niche: ${nicheLabel}
 NICHE TOPICS (choose exactly ONE; build the whole post around it; do not mix topics or switch niches):
@@ -136,18 +153,18 @@ ${topics.map((t) => `- ${t}`).join("\n")}
 
   const prod = productBrief(product);
   const productBlock = prod
-    ? `PRODUCT SOURCE (required): Base this post on the real problem this product addresses and the outcome it enables. The solution in your breakdown must stay within what this product can actually help with. Do NOT invent product claims; stay within the facts below.\n${prod}\n\n`
+    ? `PRODUCT CONTEXT (content must relate to this product's real problem space, niche, and category; do not sell, no CTA):\n${prod}\n\n`
     : "";
 
   const newsBlockRaw = formatNewsForPrompt(Array.isArray(newsItems) ? newsItems : []);
   const newsBlock = newsBlockRaw
-    ? `${newsBlockRaw}\n\nTASK: Find a problem in ONE of those current, trusted reports that the PRODUCT SOURCE can realistically help with, then break that problem down (cause -> what it does to the viewer) in the "content" story and point to the product's kind of help in "recommendation". Keep it accurate to the headline, current, and within the product's scope. If none fit the product's scope, fall back to a real, current problem in this niche that the product can help with (do not force an unrelated headline).\n\n`
+    ? `${newsBlockRaw}\n\nTASK: If useful, ground the felt problem in one current trusted item that fits this niche/product context. Keep it accurate and human. If none fit, use a real current problem in this niche.\n\n`
     : "";
 
   const userPrompt = `Video channel name: ${accountName}
 ${topicBlock}${productBlock}${newsBlock}Category: ${categoryName}
 
-SOURCE INSTRUCTIONS (these define the content style, structure, and format, follow them first):
+SOURCE INSTRUCTIONS (follow first, aligned to base rules):
 ${src}
 
 ${base}
@@ -158,54 +175,41 @@ ${OUTPUT_CONTRACT}`;
   const parsed = extractJSON(text);
 
   const content = Array.isArray(parsed.content)
-    ? parsed.content.join("\n")
-    : String(parsed.content || "");
+    ? oneLine(parsed.content.join(" "))
+    : oneLine(String(parsed.content || ""));
+  const hook = oneLine(String(parsed.hook || parsed.title || "")).replace(/[.]+$/g, "").trim();
+  const conclusion = oneLine(String(parsed.conclusion || parsed.takeaway || parsed.summary || ""));
+  const captionRaw = oneLine(String(parsed.caption || parsed.follow_call || "")).replace(/#\S+/g, "").replace(/@\S+/g, "").trim();
+  const caption = (captionRaw || content || hook) + " #1section";
 
-  const conclusion = String(
-    parsed.conclusion || parsed.takeaway || parsed.summary || ""
-  ).trim();
-
-  const cta = String(
-    parsed.cta || parsed.action || parsed.behavior || parsed.next_step || ""
-  ).replace(/\s+/g, " ").trim();
-
-  const recommendation = String(
-    parsed.recommendation || parsed.rec || parsed.suggestion || ""
-  ).replace(/[\u2013\u2014]/g, ", ").replace(/\s+/g, " ").trim();
-
-  const productPointsRaw = Array.isArray(parsed.product_points)
-    ? parsed.product_points
-    : Array.isArray(parsed.productPoints)
-      ? parsed.productPoints
-      : Array.isArray(parsed.points)
-        ? parsed.points
-        : [];
-  const product_points = productPointsRaw
-    .map((p) => String(p || "").replace(/[\u2013\u2014]/g, ", ").replace(/\s+/g, " ").trim())
-    .filter(Boolean)
-    .slice(0, 3);
+  let visual = parsed.visual || null;
+  if (!visual && parsed.block_id) visual = { block_id: parsed.block_id, block: parsed.block || parsed };
 
   let source = String(parsed.source || parsed.news_source || "")
     .replace(/https?:\/\/\S+/g, "")
     .replace(/[\u2013\u2014]/g, ", ")
     .replace(/\s+/g, " ")
     .trim();
-  // Deterministic fallback: when news grounding was provided but the model
-  // omitted `source`, credit the top trusted item (name only, no link).
   if (!source && Array.isArray(newsItems) && newsItems.length) {
     const top = newsItems.find((it) => it && it.source) || newsItems[0];
     source = String((top && top.source) || "").replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim();
   }
 
   return {
-    hook: String(parsed.hook || parsed.title || ""),
+    hook,
     content,
-    caption: String(parsed.caption || parsed.follow_call || "").trim() + " #1section",
+    caption,
     conclusion,
-    cta,
-    recommendation,
-    product_points,
+    cta: "",
+    recommendation: "",
+    product_points: [],
+    visual,
+    sales_mode: false,
     source,
-    content_json: JSON.stringify(parsed),
+    content_json: JSON.stringify({ ...parsed, content, hook, cta: "", recommendation: "", product_points: [] }),
   };
+}
+
+function oneLine(s) {
+  return String(s == null ? "" : s).replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
 }

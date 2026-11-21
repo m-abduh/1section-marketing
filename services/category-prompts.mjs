@@ -1,126 +1,35 @@
-// Category-level prompts. The base prompt (services/base-prompt.mjs) owns the
-// global funnel, language, and safety rules. These entries only define the
-// ANGLE and the REQUIRED VISUAL SHAPE for each category so every post has a
-// real visual block (quote, table, list, chain, or formula), not just prose.
+// Category-level prompts for simple 10:16 block visuals (blocks 2,5,7,8,15,19,26).
+// Base prompt owns global rules. These only set ANGLE and preferred block(s); content must fit product + niche.
 
-const shared = `HOOK: Real problem + actual cause in second person. No forced number, statistic, or third-person label.
-CTA: Name the specific behavior to stop and the replacement behavior to start. The link follows.`;
+const RULE = `Output JSON with hook, content (ONE sentence, real felt problem, no "you" focus), visual {block_id:"reality-card", block:{main:"sentence with [[highlight]]"}}, caption, conclusion (ONE clear footer sentence, max ~14 words, clarifies the content point), cta "", recommendation "", product_points [], source "".
+Use only the single reality-card layout for all content.`;
+
+const P = (angle, _blocks, hint) => `CATEGORY ANGLE: ${angle}
+CONTENT HINT: ${hint}
+${RULE}`;
 
 export const CATEGORY_PROMPTS = {
-  "Reframe": `CATEGORY ANGLE: Reframe a wrong belief the viewer carries about money, work, or relationships.
-STORY SHAPE: Show the old belief in action, the moment it fails, and the cost. End on the new frame as an insight, not a tip.
-VISUAL SHAPE: Use a compact 2-column table (Old frame | New frame) with 2 to 3 rows, then one short insight paragraph. The table is the required visual.
-${shared}`,
-
-  "Common Mistake": `CATEGORY ANGLE: Reveal a mistake the viewer is probably making without realizing it.
-STORY SHAPE: Show the mistake in action, why it feels normal, and the cost. End on the consequence, not a correction.
-VISUAL SHAPE: Use a 3-item list of what the mistake costs, then one short insight paragraph. The list is the required visual.
-${shared}`,
-
-  "Myth Busted": `CATEGORY ANGLE: Challenge a widespread belief that sounds true but quietly causes bad decisions.
-STORY SHAPE: Show the myth in action, why it survives, and the cost. Replace it with a precise truth.
-VISUAL SHAPE: Use a one-level blockquote for the myth, then 2 short paragraphs for the correction. The blockquote is the required visual.
-${shared}`,
-
-  "Hard Truth": `CATEGORY ANGLE: Say the uncomfortable truth the viewer needs to hear, with enough care that it lands.
-STORY SHAPE: Show the moment the viewer avoids the truth, then the cost of avoiding it. End on the truth as an insight.
-VISUAL SHAPE: Use a one-level blockquote for the hard truth, then 2 short paragraphs. The blockquote is the required visual.
-${shared}`,
-
-  "Quick Fix": `CATEGORY ANGLE: Show a small change that makes a real problem feel manageable.
-STORY SHAPE: Show the problem, the cause, and the moment the old behavior fails. End on the insight. The fix belongs in cta.
-VISUAL SHAPE: Use a 3-step vertical down-arrow chain for the old loop, then one short insight paragraph. The chain is the required visual.
-${shared}`,
-
-  "Warning Signs": `CATEGORY ANGLE: Help the viewer recognize early signs that something is starting to go wrong before it gets worse. Calm and specific, not alarmist.
-STORY SHAPE: Show a real moment where the early sign appears, then the consequence if it repeats.
-VISUAL SHAPE: Use a 3-item checklist of early signs, then one short consequence paragraph. The checklist is the required visual.
-${shared}`,
-
-  "Say This": `CATEGORY ANGLE: Give the viewer a ready-to-use sentence for a real conversation.
-STORY SHAPE: Show the moment the old sentence fails, then the cost of saying it. The new sentence is the insight.
-VISUAL SHAPE: Use a one-level blockquote for the exact sentence, then one short paragraph on why it works. The blockquote is the required visual.
-${shared}`,
-
-  "Simple Rule": `CATEGORY ANGLE: Give the viewer one simple rule that changes a repeated decision.
-STORY SHAPE: Show the decision going wrong, then the cost of having no rule. End on the rule as an insight.
-VISUAL SHAPE: Use a one-level blockquote for the rule, then 2 short paragraphs. The blockquote is the required visual.
-${shared}`,
-
-  "Ask Yourself": `CATEGORY ANGLE: Help the viewer spot a blind spot through a few sharp questions.
-STORY SHAPE: Show the moment the viewer avoids the question, then the cost of not asking it.
-VISUAL SHAPE: Use a 3-item question list, then one short insight paragraph. The list is the required visual.
-${shared}`,
-
-  "Hidden Cost": `CATEGORY ANGLE: Reveal the cost behind a normal habit or decision the viewer is not counting.
-STORY SHAPE: Show the small visible cost, then how the same behavior quietly multiplies. Make the cause a specific habit or default. Do not end the body with an audit, fix, or next step.
-VISUAL SHAPE: Use a 3-step vertical down-arrow chain (small cost, repeated cost, real total), then one short insight paragraph. The chain is the required visual. Use one verified number in the body, never in the hook.
-${shared}`,
-
-  "Mini Scenario": `CATEGORY ANGLE: Drop the viewer into a real, recognizable moment that shows the trap and its cause.
-STORY SHAPE: Start with a real moment, not "Imagine". Show the trigger, behavior, consequence, and insight. Do not put the move or fix in the body.
-VISUAL SHAPE: Use a 3-step vertical down-arrow chain (trigger, behavior, consequence), then one short insight paragraph. The chain is the required visual.
-${shared}`,
-
-  "Stop Doing This": `CATEGORY ANGLE: Name a common behavior the viewer should stop, and show what it is costing them.
-STORY SHAPE: Show the behavior in action, why it feels productive, and the cost. End on the consequence.
-VISUAL SHAPE: Use a 3-item list of the hidden costs, then one short insight paragraph. The list is the required visual. The stop instruction belongs in cta.
-${shared}`,
-
-  "Story": `CATEGORY ANGLE: Tell a compact story about a normal behavior and its hidden consequence.
-STORY SHAPE: Show the trigger, the behavior, and the consequence. End on the insight, not a tip.
-VISUAL SHAPE: Use a 3-step vertical down-arrow chain (trigger, behavior, consequence), then one short insight paragraph. The chain is the required visual.
-${shared}`,
-
-  "Myth": `CATEGORY ANGLE: Bust a common myth about money, work, or relationships.
-STORY SHAPE: Show the myth in action, then the cost of believing it. Replace it with a precise truth.
-VISUAL SHAPE: Use a one-level blockquote for the myth, then 2 short paragraphs for the correction. The blockquote is the required visual.
-${shared}`,
-
-  "Contrarian": `CATEGORY ANGLE: Challenge the obvious advice the viewer keeps hearing.
-STORY SHAPE: Show the obvious advice failing, then the real cause. End on the contrarian insight.
-VISUAL SHAPE: Use a horizontal arrow chain (A → B → C), then one short insight paragraph. The chain is the required visual.
-${shared}`,
-
-  "Unpopular Truth": `CATEGORY ANGLE: State an uncomfortable truth the viewer rarely hears.
-STORY SHAPE: Show the moment the truth becomes visible, then the cost of ignoring it.
-VISUAL SHAPE: Use a 3-item list of what the truth changes, then one short insight paragraph. The list is the required visual.
-${shared}`,
-
-  "Q&A": `CATEGORY ANGLE: Answer a question the viewer is already asking.
-STORY SHAPE: Show the wrong answer in action, then the cost. End on the real answer as an insight.
-VISUAL SHAPE: Use a 2-line bold contrast (X ≠ Y), then 2 short paragraphs. The contrast is the required visual.
-${shared}`,
-
-  "Compare": `CATEGORY ANGLE: Compare two approaches that look similar but produce different outcomes.
-STORY SHAPE: Show both approaches in one real moment, then the consequence of choosing the wrong one.
-VISUAL SHAPE: Use a 2-column table with 3 rows, then one short insight paragraph. The table is the required visual.
-ACCURACY: Compare behaviors or habits, not financial products with tax rules you might misstate. If you are not certain of a rule, leave it out.
-${shared}`,
-
-  "Problem → Solution": `CATEGORY ANGLE: Show that the obvious problem is not the real cause.
-STORY SHAPE: Show the problem, the real cause, and the consequence of treating the wrong thing. The solution belongs in cta.
-VISUAL SHAPE: Use a horizontal arrow chain for the wrong path, then one short paragraph for the real cause. The chain is the required visual.
-${shared}`,
-
-  "Warning": `CATEGORY ANGLE: Warn the viewer about a costly mistake before they commit to it.
-STORY SHAPE: Show the warning sign in a real moment, then the consequence if it is ignored.
-VISUAL SHAPE: Use a 3-item checklist of red flags, then one short consequence paragraph. The checklist is the required visual.
-${shared}`,
-
-  "Tips": `CATEGORY ANGLE: Show a small shift that makes a repeated behavior easier.
-STORY SHAPE: Show the old loop, the cause, and the moment it fails. End on the insight. The tip belongs in cta.
-VISUAL SHAPE: Use a 3-step vertical down-arrow chain for the old loop, then one short insight paragraph. The chain is the required visual.
-${shared}`,
-
-  "Formula": `CATEGORY ANGLE: Show the simple formula behind a result the viewer wants.
-STORY SHAPE: Show the wrong formula in action, then the cost. End on the correct formula as the insight. Do not add action steps; the cta names the behavior.
-VISUAL SHAPE: Use a single-line bold formula, then one short explanation paragraph. The formula is the required visual.
-${shared}`,
-
-  "Stat": `CATEGORY ANGLE: Replace a misleading number or comparison with a clearer truth.
-STORY SHAPE: Show what the viewer thinks the number means, then what it actually changes. Use only a number you can verify; if you cannot, use a qualitative comparison instead.
-VISUAL SHAPE: Use a two-line bold X = Y contrast, then one short paragraph. The contrast is the required visual. Never invent a statistic.
-ACCURACY: If you do not have a verifiable number, compare two behaviors qualitatively and keep the visual as a bold contrast.
-${shared}`,
+  "Reframe": P("Reframe a familiar belief to reveal the real feeling underneath.", "wrong-right, split, equation, center-statement, chat", "Surface belief vs lived reality; calm insight."),
+  "Common Mistake": P("A quiet mistake people keep repeating without noticing.", "numbered, wrong-right, center-statement, split, big-word", "Show the pattern and the feeling it creates."),
+  "Myth Busted": P("A belief that sounds right but hurts in practice.", "wrong-right, chat, center-statement, split, big-word", "Expose the gap between myth and lived experience."),
+  "Hard Truth": P("An honest tension people avoid naming.", "center-statement, big-word, wrong-right, chat", "Gentle, respectful, deeply relatable; no blame."),
+  "Quick Fix": P("A small shift that eases a real friction.", "equation, numbered, center-statement, split", "Name the friction and the relief of simplifying it."),
+  "Warning Signs": P("Early signs a situation is quietly draining someone.", "numbered, wrong-right, split, center-statement, big-word", "Specific, calm signals people recognize."),
+  "Say This": P("The difference between words that close and words that open.", "chat, wrong-right, center-statement, split, big-word", "Capture the moment communication misses the feeling."),
+  "Simple Rule": P("One simple rule that eases a repeated tension.", "equation, center-statement, big-word, wrong-right", "Make a complex feeling feel lighter and clearer."),
+  "Ask Yourself": P("A quiet tension that surfaces an inner conflict.", "chat, center-statement, big-word, numbered, split", "Invite reflection on a real inner conflict."),
+  "Hidden Cost": P("The unseen cost of a normal habit or pressure.", "equation, split, numbered, center-statement, wrong-right", "Show what slowly drains time, energy, or peace."),
+  "Mini Scenario": P("A small, recognizable moment that carries real weight.", "chat, split, center-statement, numbered, wrong-right", "One vivid moment, one feeling, no story arc."),
+  "Stop Doing This": P("A draining pattern that feels normal but costs a lot.", "numbered, wrong-right, chat, center-statement, big-word", "Name the pattern and its quiet toll."),
+  "Story": P("A single moment that captures a familiar struggle.", "chat, split, center-statement, equation", "One sentence snapshot of a real feeling."),
+  "Myth": P("A common belief that doesn't match real experience.", "wrong-right, chat, center-statement, split, big-word", "Contrast belief with what actually happens."),
+  "Contrarian": P("A surprising truth behind common advice.", "wrong-right, big-word, center-statement, split, chat", "Challenge gently; focus on lived reality."),
+  "Unpopular Truth": P("A truth people sense but rarely say out loud.", "center-statement, big-word, numbered, wrong-right", "Honest, human, non-judgmental."),
+  "Q&A": P("A doubt people carry and the clarity they feel.", "chat, wrong-right, center-statement, split, big-word", "Name the doubt and the relief of clarity."),
+  "Compare": P("Two paths that feel very different inside.", "split, wrong-right, equation, chat, center-statement", "Contrast experiences, not abstractions."),
+  "Problem → Solution": P("A real friction and the shift that eases it.", "equation, split, numbered, wrong-right", "Focus on felt relief, not instructions."),
+  "Warning": P("A subtle sign that something is slipping.", "numbered, center-statement, wrong-right, big-word, split", "Calm, specific, recognizable."),
+  "Tips": P("A small change that lightens a daily burden.", "numbered, equation, center-statement, big-word", "Practical feeling, not a checklist lecture."),
+  "Formula": P("A simple pattern behind a common feeling.", "equation, wrong-right, big-word, center-statement", "Make the cause of the feeling clear."),
+  "Stat": P("A reality that contrasts with what people assume.", "wrong-right, split, big-word, center-statement, numbered", "Use a clear contrast; do not invent numbers."),
 };

@@ -346,7 +346,7 @@ store.syncAllAccountCategories();
 // One-time category prompt revamp. The base prompt owns the funnel; each
 // category now also declares a required VISUAL SHAPE so posts never come out
 // as plain prose. Versioned so later dashboard edits are never overwritten.
-const CATEGORY_PROMPT_VERSION = "2";
+const CATEGORY_PROMPT_VERSION = "3";
 if (getSetting("category_prompt_version", "") !== CATEGORY_PROMPT_VERSION) {
   const updatePrompt = db.prepare("UPDATE categories SET default_prompt=? WHERE name=?");
   const applyCategoryPrompts = db.transaction(() => {

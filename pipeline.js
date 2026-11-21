@@ -55,30 +55,45 @@ export async function runPipeline({ videoId } = {}) {
   const { account, categoryRow, contentIndex, accountIndex } = slot;
 
   const accounts = store.listAccounts();
-
   const categoryName = categoryRow.category_name;
   const prompt = categoryRow.prompt || categoryRow.default_prompt;
 
-  // Create a pending record so captions/content are never lost even on failure
-  let video = store.createVideo(account, { id: categoryRow.category_id, name: categoryName }, {
-    status: "pending",
-  });
+  let video = store.createVideo(account, { id: categoryRow.category_id, name: categoryName }, { status: "pending" });
 
   let result;
+  let salesResult = null;
   let cycleComplete = false;
   try {
     const acs = store.listAccountCategories(account.id);
     cycleComplete = acs.length > 0 && (contentIndex % acs.length) === (acs.length - 1);
 
-    result = await generateAndPost(video, { account, categoryName, prompt, position: categoryRow.position, nicheId: account.niche_id || null, cycleComplete });
+    result = await generateAndPost(video, {
+      account,
+      categoryName,
+      prompt,
+      position: categoryRow.position,
+      nicheId: account.niche_id || null,
+      cycleComplete,
+      salesMode: false,
+    });
 
-    // Advance product only after this account's full category pass completes
-    // (one product ebook runs through all categories, then move to the next).
-    if (cycleComplete && result && result.product && result.product.id) {
-      store.setAccountLastProduct(account.id, result.product.id);
+    // End-of-cycle: insert a sales-only CTA post before repeating categories.
+    if (cycleComplete) {
+      try {
+        salesResult = await generateSalesCta({ account, nicheId: account.niche_id || null, productId: result?.product?.id || null });
+      } catch (e) {
+        console.error("[pipeline] sales CTA failed:", e.message);
+        salesResult = { error: e.message };
+      }
+
+      // Advance product pointer once per full cycle (including CTA) to the next product.
+      const advPid = salesResult?.product?.id || result?.product?.id || null;
+      if (advPid) {
+        try { store.setAccountLastProduct(account.id, advPid); } catch {}
+      }
     }
 
-    // Advance rotation only after a successful slot
+    // Advance rotation only after a successful slot/cycle step
     let nextIndex = accountIndex + 1;
     let nextContent = contentIndex;
     if (nextIndex >= accounts.length) {
@@ -92,10 +107,105 @@ export async function runPipeline({ videoId } = {}) {
     result = { error: err.message };
   }
 
-  return { result, video: store.getVideo(video.id) || video };
+  const out = { result, video: store.getVideo(video.id) || video };
+  if (salesResult) out.sales = salesResult;
+  return out;
 }
 
-async function generateAndPost(video, { account, categoryName, prompt, position, nicheId, cycleComplete }) {
+async function generateSalesCta({ account, nicheId, productId }) {
+  const outFile = `${account.name.replace(/[^a-zA-Z0-9-_]+/g, "-")}-sales-${Date.now()}.mp4`;
+  let salesVideo = store.createVideo(account, { id: null, name: "Sales CTA" }, { status: "pending" });
+
+  const effectiveNicheId = nicheId || account.niche_id || null;
+  let product = null;
+  if (effectiveNicheId) {
+    try {
+      // Use the same product as the completed cycle (passed in) when possible.
+      product = await nextProductForNiche(effectiveNicheId, account.last_product_id || null);
+      // If pipeline passed the cycle's product id and lookup rolled forward unexpectedly, prefer passed id context by reusing fields below when matching.
+    } catch (e) {
+      console.warn(`[pipeline] sales product lookup failed for niche ${effectiveNicheId}:`, e.message);
+    }
+  }
+  if (product) {
+    salesVideo = store.updateVideo(salesVideo.id, {
+      product_id: product.id,
+      product_name: product.name || null,
+      niche_id: effectiveNicheId,
+    });
+  }
+
+  const gen = await generatePost({
+    accountName: account.name,
+    categoryName: "Sales CTA",
+    prompt: "Sales-only CTA for the ebook/product. Focus on clear value and purchase intent.",
+    product,
+    newsItems: [],
+    salesMode: true,
+  });
+
+  salesVideo = store.updateVideo(salesVideo.id, {
+    hook: gen.hook || "Get the guide",
+    content: gen.content || "Sales CTA",
+    caption: gen.caption || `${product?.name || "Guide"} #1section`,
+    content_json: gen.content_json || JSON.stringify(gen),
+  });
+
+  const contentChecksum = (gen.content || gen.hook || "sales").trim();
+
+  // Dedupe sales CTA per account+product (avoid repeating identical sales post)
+  const dup = store.listVideos({ accountId: account.id }).find(
+    (v) => ["success", "ready"].includes(v.status)
+      && v.category_name === "Sales CTA"
+      && v.product_id && product && v.product_id === product.id
+  );
+  if (dup) {
+    store.deleteVideo(salesVideo.id);
+    return { status: "dup", skipped: true, mode: "sales", product: product ? { id: product.id, name: product.name } : null };
+  }
+
+  const nicheLabel = account.niche_name || (account.name || "").split(".").pop() || "1section";
+  const videoPath = await generateVideo(
+    {
+      mode: "sales",
+      sales_mode: true,
+      hook: gen.hook,
+      content: gen.content,
+      source: "",
+      category: "Sales CTA",
+      account: account.name,
+      account_link: account.link || "",
+      conclusion: gen.conclusion,
+      cta: gen.cta,
+      recommendation: gen.recommendation || "",
+      product_points: Array.isArray(gen.product_points) ? gen.product_points : [],
+      product_name: product ? (product.name || "") : "",
+      product_image: product ? (product.coverImage || "") : "",
+      product_features: product ? (product.features || []) : [],
+      product_learnings: product ? (product.learnings || []) : [],
+      product_outcome: product ? (product.outcome || "") : "",
+      price: product ? (product.price ?? product.salePrice ?? product.sale_price ?? product.priceAmount ?? product.price_amount ?? "") : "",
+      compare_price: product ? (product.compareAtPrice ?? product.compare_at_price ?? product.comparePrice ?? product.originalPrice ?? product.original_price ?? product.compareAtAmount ?? product.compare_at_amount ?? "") : "",
+      discount: product ? (product.discount ?? product.discountPercent ?? product.discount_percent ?? product.discountLabel ?? "") : "",
+      currency: product ? (product.currency || "USD") : "USD",
+      niche: nicheLabel,
+      index: 999,
+    },
+    outFile
+  );
+  salesVideo = store.updateVideo(salesVideo.id, { video_path: videoPath });
+
+  if (!store.isPublishingEnabled()) {
+    salesVideo = store.updateVideo(salesVideo.id, { status: "ready", posted_at: null, last_error: null });
+    console.log(`[pipeline] Publishing disabled; sales CTA #${salesVideo.id} rendered and left ready`);
+    return { status: "ready", published: false, mode: "sales", product: product ? { id: product.id, name: product.name } : null, video: salesVideo };
+  }
+
+  const result = await uploadWithRetry(salesVideo);
+  return { ...result, mode: "sales", product: product ? { id: product.id, name: product.name } : null, video: store.getVideo(salesVideo.id) || salesVideo };
+}
+
+async function generateAndPost(video, { account, categoryName, prompt, position, nicheId, cycleComplete, salesMode = false }) {
   const outFile = `${account.name.replace(/[^a-zA-Z0-9-_]+/g, "-")}-${Date.now()}.mp4`;
 
   // Resolve the next product for this niche (cycles 1,2,3 -> 1,... using last_product_id).
@@ -119,7 +229,7 @@ async function generateAndPost(video, { account, categoryName, prompt, position,
 
   // Current, trusted-news problem grounding (bounded by the chosen product).
   let newsItems = [];
-  if (effectiveNicheId) {
+  if (effectiveNicheId && !salesMode) {
     try {
       const nicheRow = await getNiche(effectiveNicheId);
       newsItems = await findCurrentNews({
@@ -133,7 +243,7 @@ async function generateAndPost(video, { account, categoryName, prompt, position,
     }
   }
 
-  const gen = await generatePost({ accountName: account.name, categoryName, prompt, product, newsItems });
+  const gen = await generatePost({ accountName: account.name, categoryName, prompt, product, newsItems, salesMode });
   video = store.updateVideo(video.id, {
     hook: gen.hook,
     content: gen.content,
@@ -141,18 +251,18 @@ async function generateAndPost(video, { account, categoryName, prompt, position,
     content_json: gen.content_json,
   });
 
-  const contentChecksum = gen.content.trim();
+  const contentChecksum = (gen.content || "").trim();
 
   // Dedupe: skip if exactly the same content was already posted (or already
   // rendered and waiting to be published) for this account.
   const dup = store.listVideos({ accountId: account.id }).find(
-    (v) => ["success", "ready"].includes(v.status) && v.content && v.content.trim() === contentChecksum
+    (v) => ["success", "ready"].includes(v.status) && v.id !== video.id && v.content && v.content.trim() === contentChecksum
   );
   if (dup) {
     store.deleteVideo(video.id);
     // Still advance the product pointer at category-cycle completion so a duplicate
     // on the last slot doesn't trap the account on the same product forever.
-    if (cycleComplete && product) store.setAccountLastProduct(account.id, product.id);
+    // (actual advance happens in runPipeline after sales CTA)
     return { status: "dup", skipped: true, product: product ? { id: product.id, name: product.name } : null };
   }
 
@@ -160,6 +270,7 @@ async function generateAndPost(video, { account, categoryName, prompt, position,
     {
       hook: gen.hook,
       content: gen.content,
+      visual: gen.visual || null,
       source: gen.source || "",
       category: categoryName,
       account: account.name,
@@ -179,38 +290,34 @@ async function generateAndPost(video, { account, categoryName, prompt, position,
       currency: product ? (product.currency || "USD") : "USD",
       niche: account.niche_name || (account.name || "").split(".").pop() || "1section",
       index: position,
+      sales_mode: !!salesMode,
     },
     outFile
   );
   video = store.updateVideo(video.id, { video_path: videoPath });
 
-  // Publishing off: the AI + renderer still ran, so keep the finished file and
-  // mark it ready. Advance the product pointer only at category-cycle completion,
-  // same gate as publish (one ebook runs through all categories, then next).
+  // Publishing off: keep rendered file and mark ready. Product advance happens in runPipeline at cycle end.
   if (!store.isPublishingEnabled()) {
     video = store.updateVideo(video.id, { status: "ready", posted_at: null, last_error: null });
     console.log(`[pipeline] Publishing disabled; video #${video.id} rendered and left ready`);
-    if (cycleComplete && product) store.setAccountLastProduct(account.id, product.id);
     return { status: "ready", published: false, product: product ? { id: product.id, name: product.name } : null };
   }
 
   const result = await uploadWithRetry(video);
-  // Advance the product pointer at category-cycle completion, not per post.
-  if (cycleComplete && result && result.status === "success" && product) {
-    store.setAccountLastProduct(account.id, product.id);
-  }
   return { ...result, product: product ? { id: product.id, name: product.name } : null };
 }
 
 async function uploadWithRetry(video) {
-  // Guard the manual-retry path too: toggling publishing off must never leave a
-  // rendered video marked as failed just because delivery is paused.
   if (!store.isPublishingEnabled()) {
     video = store.updateVideo(video.id, { status: "ready", last_error: null });
     return { status: "ready", published: false, skipped: true };
   }
 
   const account = store.getAccount(video.account_id);
+  if (!account) {
+    video = store.updateVideo(video.id, { status: "failed", last_error: "Account not found" });
+    return { status: "failed", error: "Account not found" };
+  }
   const token = account.buffer_token;
   const publicUrl = process.env.PUBLIC_URL;
 
@@ -250,7 +357,6 @@ async function uploadWithRetry(video) {
     console.error(`[pipeline] upload failed: ${err.message}`);
   }
 
-  // Publishing may have been switched off while the upload was retrying.
   if (!store.isPublishingEnabled()) {
     video = store.updateVideo(video.id, { status: "ready", last_error: null });
     return { status: "ready", published: false, skipped: true };
@@ -273,8 +379,6 @@ export async function runManualRetry(videoId) {
     return runPipeline({});
   }
 
-  // Retry is a publish action. When publishing is paused, leave the rendered
-  // file untouched instead of flipping it to pending/failed.
   if (!store.isPublishingEnabled()) {
     return { status: "ready", skipped: true, reason: "publishing disabled" };
   }
